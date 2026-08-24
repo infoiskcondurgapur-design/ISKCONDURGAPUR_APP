@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { FaFacebook, FaTwitter, FaYoutube, FaInstagram, FaMapMarkerAlt, FaPhone, FaEnvelope } from 'react-icons/fa';
+import { FaFacebook, FaTwitter, FaYoutube, FaInstagram, FaMapMarkerAlt, FaPhone, FaEnvelope, FaEye } from 'react-icons/fa';
 
 export default function Footer() {
   const pathname = usePathname();
@@ -21,6 +21,8 @@ export default function Footer() {
     youtubeUrl: 'https://youtube.com/iskcon',
   });
 
+  const [totalVisitors, setTotalVisitors] = useState<number | null>(null);
+
   useEffect(() => {
     if (isAdmin) return;
     const fetchSettings = async () => {
@@ -35,6 +37,19 @@ export default function Footer() {
       }
     };
     fetchSettings();
+
+    const fetchVisitors = async () => {
+      try {
+        const response = await fetch('/api/visitors');
+        const result = await response.json();
+        if (response.ok && typeof result.totalVisitors === 'number') {
+          setTotalVisitors(result.totalVisitors);
+        }
+      } catch (err) {
+        console.error('Error fetching visitor count:', err);
+      }
+    };
+    fetchVisitors();
   }, [isAdmin]);
 
   if (isAdmin) {
@@ -133,6 +148,15 @@ export default function Footer() {
         <div className="border-t border-gray-800 py-2">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="mb-2 md:mb-0">
+              {totalVisitors !== null && (
+                <p className="text-xs text-gray-400 flex items-center justify-center md:justify-start mb-1">
+                  <FaEye className="mr-1.5 text-iskcon-orange" />
+                  <span>
+                    Total Visitors:{' '}
+                    <span className="font-semibold text-white">{totalVisitors.toLocaleString()}</span>
+                  </span>
+                </p>
+              )}
               <p className="text-xs text-gray-600">
                 © {new Date().getFullYear()} ISKCON. All Rights Reserved.
               </p>
