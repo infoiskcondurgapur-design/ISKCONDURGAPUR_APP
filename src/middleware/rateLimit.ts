@@ -1,61 +1,64 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import logger from '@/utils/logger';
+import { AppError } from '@/utils/errorHandler';
 
-interface RateLimitStore {
-  [key: string]: {
-    count: number;
-    resetTime: number;
-  };
+interface RateLimitEntry {
+  count: number;
+  resetTime: number;
 }
 
-const store: RateLimitStore = {};
-const WINDOW_SIZE = 15 * 60 * 1000; // 15 minutes
-const MAX_REQUESTS = 100; // Max requests per window
-const LOGIN_MAX_REQUESTS = 5; // Max login attempts per window
+const store: Record<string, RateLimitEntry> = {};
 
-export function rateLimit(request: NextRequest) {
-  const ip = request.ip || 'unknown';
-  const now = Date.now();
-  const isLoginRoute = request.nextUrl.pathname === '/admin/login' && request.method === 'POST';
-  const maxRequests = isLoginRoute ? LOGIN_MAX_REQUESTS : MAX_REQUESTS;
+const DEFAULT_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
+const DEFAULT_MAX = 100;
 
-  // Clean up old entries
+export interface RateLimitOptions {
+  max?: number;
+  windowMs?: number;
+}
+
+function cleanupStore(now: number) {
   for (const key in store) {
     if (store[key].resetTime < now) {
       delete store[key];
     }
   }
+}
 
-  // Initialize or get existing window
-  if (!store[ip] || store[ip].resetTime < now) {
-    store[ip] = {
-      count: 1,
-      resetTime: now + WINDOW_SIZE,
-    };
-    return NextResponse.next();
+export function getClientIp(request: NextRequest): string {
+  const forwarded = request.headers.get('x-forwarded-for');
+  if (forwarded) return forwarded.split(',')[0].trim();
+  return request.headers.get('x-real-ip') || 'unknown';
+}
+
+/**
+ * Throws an AppError (429) when the caller exceeds the allowed number of
+ * requests per window. Keyed by client IP.
+ */
+export function rateLimit(
+  request: NextRequest,
+  options: RateLimitOptions = {}
+): void {
+  const ip = getClientIp(request);
+  const max = options.max ?? DEFAULT_MAX;
+  const windowMs = options.windowMs ?? DEFAULT_WINDOW_MS;
+  const now = Date.now();
+
+  cleanupStore(now);
+
+  const entry = store[ip];
+
+  if (!entry || entry.resetTime < now) {
+    store[ip] = { count: 1, resetTime: now + windowMs };
+    return;
   }
 
-  // Increment request count
-  store[ip].count++;
+  entry.count++;
 
-  // Check if limit exceeded
-  if (store[ip].count > maxRequests) {
-    logger.warn(`Rate limit exceeded for IP: ${ip}`);
-    return new NextResponse(
-      JSON.stringify({
-        error: 'Too many requests',
-        retryAfter: Math.ceil((store[ip].resetTime - now) / 1000)
-      }),
-      {
-        status: 429,
-        headers: {
-          'Retry-After': Math.ceil((store[ip].resetTime - now) / 1000).toString(),
-          'Content-Type': 'application/json',
-        },
-      }
-    );
+  if (entry.count > max) {
+    const retryAfterSec = Math.ceil((entry.resetTime - now) / 1000);
+    logger.warn(`Rate limit exceeded for IP: ${ip}`, { retryAfterSec });
+    throw new AppError(`Too many requests. Please try again in ${retryAfterSec} seconds.`, 429);
   }
-
-  return NextResponse.next();
 }

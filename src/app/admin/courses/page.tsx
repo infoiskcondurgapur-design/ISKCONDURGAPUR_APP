@@ -153,7 +153,7 @@ export default function CoursesList() {
                                                 <div className="flex items-center gap-4">
                                                     <div className="w-12 h-12 rounded-lg bg-gray-100 overflow-hidden border border-gray-200 flex-shrink-0 relative">
                                                         <Image
-                                                            src={course.image || '/images/iskcon-logo.png'}
+                                                            src={(course.image && course.image.replace(/\\/g, '/')) || '/images/iskcon-logo.png'}
                                                             alt={course.title}
                                                             fill
                                                             className="object-cover"

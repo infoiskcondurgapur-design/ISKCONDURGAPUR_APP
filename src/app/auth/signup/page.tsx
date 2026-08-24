@@ -8,6 +8,7 @@ import { motion } from 'framer-motion';
 export default function SignupPage() {
   const [formData, setFormData] = useState({
     fullName: '',
+    username: '',
     email: '',
     password: '',
     confirmPassword: ''
@@ -17,6 +18,7 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   const [agreeTerms, setAgreeTerms] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -37,10 +39,16 @@ export default function SignupPage() {
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
-    const { fullName, email, password, confirmPassword } = formData;
+    const { fullName, username, email, password, confirmPassword } = formData;
 
     if (!fullName.trim()) {
       newErrors.fullName = 'Full name is required';
+    }
+
+    if (!username.trim()) {
+      newErrors.username = 'Username is required';
+    } else if (username.length < 3) {
+      newErrors.username = 'Username must be at least 3 characters';
     }
 
     if (!email.trim()) {
@@ -75,14 +83,23 @@ export default function SignupPage() {
 
     setLoading(true);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // This would be replaced with actual signup logic
-      console.log('Signup with:', formData);
-      
-      // Redirect to login page after successful signup
-      window.location.href = '/auth/login?registered=true';
+      const { confirmPassword, ...signupData } = formData;
+      const res = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(signupData),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setFormError(data.message || 'An error occurred during signup.');
+        return;
+      }
+
+      // Show verification instructions before going to login
+      setSuccessMessage(data.message || 'Account created. Please sign in.');
+      return;
     } catch (err) {
       setFormError('An error occurred while creating your account. Please try again.');
     } finally {
@@ -116,7 +133,17 @@ export default function SignupPage() {
             <span className="block sm:inline">{formError}</span>
           </div>
         )}
-        
+
+        {successMessage && (
+          <div className="bg-green-100 border border-green-400 text-green-800 px-4 py-3 rounded relative" role="status">
+            <span className="block sm:inline">{successMessage}</span>
+            <Link href="/auth/login" className="font-medium underline block mt-1 text-sm">
+              Go to Sign In
+            </Link>
+          </div>
+        )}
+
+        {!successMessage && (
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="rounded-md shadow-sm space-y-4">
             <div className="relative">
@@ -130,13 +157,34 @@ export default function SignupPage() {
                 type="text"
                 autoComplete="name"
                 required
-                className={`appearance-none relative block w-full px-3 py-3 pl-10 border ${errors.fullName ? 'border-red-500' : 'border-gray-300'} placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-iskcon-orange focus:border-iskcon-orange focus:z-10 sm:text-sm`}
+                className={`appearance-none relative block w-full px-3 py-3 pl-10 border ${errors.fullName ? 'border-red-500' : 'border-gray-300'} placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-iskcon-orange focus:border-iskcon-orange focus:z-10 sm:text-sm`}
                 placeholder="Full Name"
                 value={formData.fullName}
                 onChange={handleChange}
               />
               {errors.fullName && (
                 <p className="mt-1 text-sm text-red-600">{errors.fullName}</p>
+              )}
+            </div>
+
+            <div className="relative">
+              <label htmlFor="username" className="sr-only">Username</label>
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <FaUser className="h-5 w-5 text-gray-400" />
+              </div>
+              <input
+                id="username"
+                name="username"
+                type="text"
+                autoComplete="username"
+                required
+                className={`appearance-none relative block w-full px-3 py-3 pl-10 border-t-0 border ${errors.username ? 'border-red-500' : 'border-gray-300'} placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-iskcon-orange focus:border-iskcon-orange focus:z-10 sm:text-sm`}
+                placeholder="Username"
+                value={formData.username}
+                onChange={handleChange}
+              />
+              {errors.username && (
+                <p className="mt-1 text-sm text-red-600">{errors.username}</p>
               )}
             </div>
             
@@ -151,7 +199,7 @@ export default function SignupPage() {
                 type="email"
                 autoComplete="email"
                 required
-                className={`appearance-none relative block w-full px-3 py-3 pl-10 border ${errors.email ? 'border-red-500' : 'border-gray-300'} placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-iskcon-orange focus:border-iskcon-orange focus:z-10 sm:text-sm`}
+                className={`appearance-none relative block w-full px-3 py-3 pl-10 border-t-0 border ${errors.email ? 'border-red-500' : 'border-gray-300'} placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-iskcon-orange focus:border-iskcon-orange focus:z-10 sm:text-sm`}
                 placeholder="Email address"
                 value={formData.email}
                 onChange={handleChange}
@@ -172,7 +220,7 @@ export default function SignupPage() {
                 type={showPassword ? 'text' : 'password'}
                 autoComplete="new-password"
                 required
-                className={`appearance-none relative block w-full px-3 py-3 pl-10 border ${errors.password ? 'border-red-500' : 'border-gray-300'} placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-iskcon-orange focus:border-iskcon-orange focus:z-10 sm:text-sm`}
+                className={`appearance-none relative block w-full px-3 py-3 pl-10 border-t-0 border ${errors.password ? 'border-red-500' : 'border-gray-300'} placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-iskcon-orange focus:border-iskcon-orange focus:z-10 sm:text-sm`}
                 placeholder="Password"
                 value={formData.password}
                 onChange={handleChange}
@@ -204,7 +252,7 @@ export default function SignupPage() {
                 type={showConfirmPassword ? 'text' : 'password'}
                 autoComplete="new-password"
                 required
-                className={`appearance-none relative block w-full px-3 py-3 pl-10 border ${errors.confirmPassword ? 'border-red-500' : 'border-gray-300'} placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-iskcon-orange focus:border-iskcon-orange focus:z-10 sm:text-sm`}
+                className={`appearance-none relative block w-full px-3 py-3 pl-10 border-t-0 border ${errors.confirmPassword ? 'border-red-500' : 'border-gray-300'} placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-iskcon-orange focus:border-iskcon-orange focus:z-10 sm:text-sm`}
                 placeholder="Confirm Password"
                 value={formData.confirmPassword}
                 onChange={handleChange}
@@ -260,6 +308,7 @@ export default function SignupPage() {
             </button>
           </div>
         </form>
+        )}
 
         <div className="mt-6">
           <div className="relative">

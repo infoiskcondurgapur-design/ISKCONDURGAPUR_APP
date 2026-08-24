@@ -1,0 +1,11 @@
+node_modules
+.next
+.git
+documents
+public/documents
+*.pdf
+logs
+*.log
+test-results
+scratch
+lighthouse-report*.json

@@ -14,15 +14,16 @@ export default function LoginPage() {
   const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [needsVerification, setNeedsVerification] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setNeedsVerification(false);
     setLoading(true);
 
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api';
-      const res = await fetch(`${apiUrl}/auth/login`, {
+      const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
         body: JSON.stringify({ username, password }),
@@ -32,6 +33,9 @@ export default function LoginPage() {
 
       if (!res.ok) {
         setError(data.message || 'Invalid credentials. Please try again.');
+        if (res.status === 403 && /verify/i.test(data.message || '')) {
+          setNeedsVerification(true);
+        }
         return;
       }
 
@@ -76,6 +80,11 @@ export default function LoginPage() {
         {error && (
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
             <span className="block sm:inline">{error}</span>
+            {needsVerification && (
+              <Link href="/auth/resend-verification" className="font-medium underline block mt-1 text-sm">
+                Resend verification email
+              </Link>
+            )}
           </div>
         )}
 

@@ -360,7 +360,7 @@ export default function CalendarPage() {
               >
                 <div className="relative h-48">
                   <Image
-                    src={event.image}
+                    src={event.image ? event.image.replace(/\\/g, '/') : ''}
                     alt={event.title}
                     fill
                     className="object-cover"

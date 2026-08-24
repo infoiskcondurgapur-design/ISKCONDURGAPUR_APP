@@ -7,7 +7,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 
 export default function NoticeBanner() {
   const pathname = usePathname();
-  const isAdmin = pathname?.startsWith('/admin');
+  const isAdmin = pathname?.toLowerCase().startsWith('/admin');
   const [isVisible, setIsVisible] = useState(false);
   const [text, setText] = useState('');
 

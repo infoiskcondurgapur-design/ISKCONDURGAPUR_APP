@@ -1,9 +1,10 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { sign } from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import logger from '@/utils/logger';
 import { twoFactorAuth } from '@/utils/twoFactorAuth';
 import { ipBlocker } from '@/middleware/ipBlock';
+import { rateLimit } from '@/middleware/rateLimit';
 import Tokens from 'csrf';
 import dbConnect from '@/utils/db';
 import User from '@/models/user.model';
@@ -14,8 +15,10 @@ const CSRF_SECRET = process.env.CSRF_SECRET || 'your-csrf-secret-key';
 
 const tokens = new Tokens();
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
+    rateLimit(request, { max: 10, windowMs: 15 * 60 * 1000 });
+
     const { username, password, totpToken } = await request.json();
     const clientIp = request.headers.get('x-forwarded-for') || 'unknown';
 
@@ -67,6 +70,13 @@ export async function POST(request: Request) {
         logger.warn('Failed login attempt:', { username, ip: clientIp });
         throw new AppError('Invalid credentials', 401);
       }
+    }
+
+    // Block explicitly unverified accounts.
+    // Legacy users have `isVerified === undefined`, so they are still allowed in.
+    if ((user as any).isVerified === false) {
+      logger.warn(`Unverified account login attempt: ${username}`);
+      throw new AppError('Please verify your email address before signing in.', 403);
     }
 
     // Check 2FA if enabled

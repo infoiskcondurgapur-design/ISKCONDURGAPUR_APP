@@ -24,7 +24,7 @@ const nextConfig = {
   // ─── Compiler / Tree-shaking ──────────────────────────────────────────────
   // Reduces JS bundle by only importing the icons/modules actually used
   experimental: {
-    optimizePackageImports: ['react-icons', 'framer-motion', 'gsap'],
+    optimizePackageImports: ['react-icons', 'framer-motion'],
   },
 
   // ─── HTTP Headers ─────────────────────────────────────────────────────────

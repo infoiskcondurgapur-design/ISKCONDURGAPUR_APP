@@ -198,7 +198,7 @@ export default function TempleDetail() {
             {temple.image ? (
               <div className="w-full h-full relative">
                 <Image 
-                  src={temple.image} 
+                  src={temple.image.replace(/\\/g, '/')} 
                   alt={temple.name}
                   fill
                   style={{ objectFit: 'cover' }}

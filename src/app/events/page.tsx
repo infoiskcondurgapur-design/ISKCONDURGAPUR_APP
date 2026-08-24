@@ -123,7 +123,7 @@ export default function EventsPage() {
               {featured.map(event => (
                 <motion.div key={event._id} className="bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-shadow" whileHover={{ y: -4 }}>
                   <div className="relative h-56">
-                    <Image src={event.image || '/images/iskcon-logo.png'} alt={event.title} fill className="object-cover" />
+                    <Image src={(event.image && event.image.replace(/\\/g, '/')) || '/images/iskcon-logo.png'} alt={event.title} fill className="object-cover" />
                     <div className="absolute top-3 left-3 bg-orange-500 text-white text-xs font-bold px-3 py-1 rounded-full">Featured</div>
                   </div>
                   <div className="p-6">
@@ -152,7 +152,7 @@ export default function EventsPage() {
               {all.map((event, i) => (
                 <motion.div key={event._id} className="bg-white rounded-xl overflow-hidden shadow-sm border border-gray-100 hover:shadow-lg transition-shadow" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: i * 0.05 }}>
                   <div className="relative h-44">
-                    <Image src={event.image || '/images/iskcon-logo.png'} alt={event.title} fill className="object-cover" />
+                    <Image src={(event.image && event.image.replace(/\\/g, '/')) || '/images/iskcon-logo.png'} alt={event.title} fill className="object-cover" />
                     {event.category && <span className="absolute top-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded-full">{event.category}</span>}
                   </div>
                   <div className="p-4">

@@ -153,7 +153,7 @@ export default function EventsList() {
                                                 <div className="flex items-center gap-4">
                                                     <div className="w-12 h-12 rounded-lg bg-gray-100 overflow-hidden border border-gray-200 flex-shrink-0 relative">
                                                         <Image
-                                                            src={event.image || '/images/iskcon-logo.png'}
+                                                            src={(event.image && event.image.replace(/\\/g, '/')) || '/images/iskcon-logo.png'}
                                                             alt={event.title}
                                                             fill
                                                             className="object-cover"

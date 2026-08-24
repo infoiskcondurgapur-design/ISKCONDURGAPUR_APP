@@ -58,6 +58,12 @@ class IPBlocker {
   getBlockInfo(ip: string): BlockedIP | undefined {
     return this.blockedIPs.get(ip);
   }
+
+  clear() {
+    this.blockedIPs.clear();
+    this.suspiciousActivities.clear();
+    logger.info('All IP blocks and suspicious activity records cleared');
+  }
 }
 
 export const ipBlocker = IPBlocker.getInstance();

@@ -182,7 +182,7 @@ export default function Navbar() {
     };
   }, [scrolled]);
 
-  const isAdmin = pathname?.startsWith('/admin');
+  const isAdmin = pathname?.toLowerCase().startsWith('/admin');
 
   if (isAdmin) {
     return null;

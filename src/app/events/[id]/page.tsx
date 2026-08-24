@@ -83,7 +83,7 @@ export default function EventDetailsPage() {
         >
           <div className="relative h-[400px] w-full">
             <Image 
-              src={event.image || '/images/iskcon-logo.png'} 
+              src={(event.image && event.image.replace(/\\/g, '/')) || '/images/iskcon-logo.png'} 
               alt={event.title} 
               fill 
               className="object-cover"

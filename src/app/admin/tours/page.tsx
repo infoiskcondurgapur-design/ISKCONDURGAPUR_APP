@@ -289,7 +289,7 @@ export default function ToursList() {
                             <div className="flex items-center gap-4">
                               <div className="relative w-16 h-12 rounded-lg overflow-hidden border border-gray-200 flex-shrink-0 bg-gray-100">
                                 <Image
-                                  src={tour.image || '/images/tours/placeholder.jpg'}
+                                  src={(tour.image && tour.image.replace(/\\/g, '/')) || '/images/tours/placeholder.jpg'}
                                   alt={tour.name}
                                   fill
                                   className="object-cover"

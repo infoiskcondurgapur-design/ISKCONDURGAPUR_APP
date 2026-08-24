@@ -146,7 +146,7 @@ export default function TemplesList() {
                         <div className="flex items-center gap-3">
                           <div className="relative w-10 h-10 rounded-full overflow-hidden border border-gray-200">
                             <Image
-                              src={temple.image || '/images/temple-placeholder.jpg'}
+                              src={(temple.image && temple.image.replace(/\\/g, '/')) || '/images/temple-placeholder.jpg'}
                               alt={temple.name}
                               fill
                               className="object-cover"

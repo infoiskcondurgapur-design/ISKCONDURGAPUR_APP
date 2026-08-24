@@ -9,7 +9,7 @@ import { FaFacebook, FaTwitter, FaYoutube, FaInstagram, FaMapMarkerAlt, FaPhone,
 
 export default function Footer() {
   const pathname = usePathname();
-  const isAdmin = pathname?.startsWith('/admin');
+  const isAdmin = pathname?.toLowerCase().startsWith('/admin');
 
   const [settings, setSettings] = useState({
     contactPhone: '+1 (310) 836-2676',

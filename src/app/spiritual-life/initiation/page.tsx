@@ -244,7 +244,7 @@ export default function InitiationPage() {
 
             {step === 'OTP' && (
               <div className="space-y-4">
-                <p className="text-gray-600 text-sm">We've sent an OTP to <strong>{mobile}</strong>. (For testing, use <strong>1234</strong>)</p>
+                <p className="text-gray-600 text-sm">We&apos;ve sent an OTP to <strong>{mobile}</strong>. (For testing, use <strong>1234</strong>)</p>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Enter OTP</label>
                   <input 

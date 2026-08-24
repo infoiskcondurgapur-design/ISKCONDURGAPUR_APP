@@ -7,6 +7,7 @@ import {
     FaHome, FaUsers, FaCalendarAlt, FaMusic, FaRoute, 
     FaCog, FaImage, FaSignOutAlt, FaBookOpen, FaBars, FaTimes 
 } from 'react-icons/fa';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function AdminSidebar() {
     const pathname = usePathname();
@@ -34,82 +35,112 @@ export default function AdminSidebar() {
         setIsMobileOpen(!isMobileOpen);
     };
 
+    const sidebarContent = (
+        <div className="flex flex-col h-full bg-white/80 backdrop-blur-xl border-r border-gray-100 shadow-[4px_0_24px_rgba(0,0,0,0.02)]">
+            {/* Desktop Logo Area */}
+            <div className="hidden md:flex h-24 items-center gap-4 px-8 border-b border-gray-50">
+                <div className="w-12 h-12 bg-gradient-to-br from-orange-400 to-[#FF6B00] rounded-2xl flex items-center justify-center text-white shadow-lg shadow-orange-500/30">
+                    <FaHome size={22} />
+                </div>
+                <h1 className="text-2xl font-black tracking-tight text-gray-900">
+                    ISKCON<span className="text-[#FF6B00]">.</span>
+                </h1>
+            </div>
+
+            {/* Navigation Links */}
+            <div className="flex-1 overflow-y-auto py-8 px-6 space-y-2 custom-scrollbar">
+                <p className="px-4 text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-6">Main Navigation</p>
+                {navItems.map((item) => {
+                    const isActive = item.path === '/admin' 
+                        ? pathname === '/admin' 
+                        : pathname.startsWith(item.path);
+                        
+                    return (
+                        <Link 
+                            key={item.name} 
+                            href={item.path}
+                            onClick={() => setIsMobileOpen(false)}
+                            className="block relative group"
+                        >
+                            {isActive && (
+                                <motion.div 
+                                    layoutId="sidebar-active-bg"
+                                    className="absolute inset-0 bg-orange-50 rounded-2xl border border-orange-100/50"
+                                    initial={false}
+                                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                                />
+                            )}
+                            <div className={`relative flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-colors duration-200 font-semibold ${
+                                isActive 
+                                ? 'text-[#FF6B00]' 
+                                : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50/50'
+                            }`}>
+                                <span className={`text-xl transition-transform duration-200 ${isActive ? 'scale-110 text-[#FF6B00]' : 'text-gray-400 group-hover:text-gray-600 group-hover:scale-110'}`}>
+                                    {item.icon}
+                                </span>
+                                <span className="text-[15px] tracking-wide">{item.name}</span>
+                            </div>
+                        </Link>
+                    );
+                })}
+            </div>
+
+            {/* Logout Button */}
+            <div className="p-6 border-t border-gray-50">
+                <button
+                    onClick={handleLogout}
+                    className="flex items-center gap-4 w-full px-4 py-3.5 text-gray-500 hover:text-red-500 hover:bg-red-50/50 rounded-2xl transition-all duration-200 font-semibold group"
+                >
+                    <FaSignOutAlt className="text-xl text-gray-400 group-hover:text-red-500 transition-colors" />
+                    <span className="text-[15px] tracking-wide">Logout</span>
+                </button>
+            </div>
+        </div>
+    );
+
     return (
         <>
             {/* Mobile Hamburger Menu */}
-            <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-white border-b border-gray-200 z-50 flex items-center justify-between px-4">
-                <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 bg-iskcon-orange rounded-lg flex items-center justify-center text-white">
+            <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-white/90 backdrop-blur-md border-b border-gray-100 z-50 flex items-center justify-between px-6 shadow-sm">
+                <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 bg-gradient-to-br from-orange-400 to-[#FF6B00] rounded-xl flex items-center justify-center text-white shadow-md shadow-orange-500/20">
                         <FaHome size={16} />
                     </div>
-                    <h1 className="font-bold text-gray-800">Admin Panel</h1>
+                    <h1 className="font-black text-lg text-gray-900 tracking-tight">ISKCON<span className="text-[#FF6B00]">.</span></h1>
                 </div>
-                <button onClick={toggleMobileMenu} className="text-gray-600 focus:outline-none p-2">
-                    {isMobileOpen ? <FaTimes size={24} /> : <FaBars size={24} />}
+                <button onClick={toggleMobileMenu} className="text-gray-900 focus:outline-none p-2 bg-gray-50 rounded-lg active:scale-95 transition-transform">
+                    {isMobileOpen ? <FaTimes size={20} /> : <FaBars size={20} />}
                 </button>
             </div>
 
-            {/* Sidebar Container */}
-            <div className={`fixed inset-y-0 left-0 z-40 w-64 bg-white border-r border-gray-200 transform transition-transform duration-300 ease-in-out flex flex-col ${isMobileOpen ? 'translate-x-0 mt-16' : '-translate-x-full md:translate-x-0'} md:mt-0`}>
-                
-                {/* Desktop Logo Area */}
-                <div className="hidden md:flex h-20 items-center gap-3 px-6 border-b border-gray-100">
-                    <div className="w-10 h-10 bg-iskcon-orange rounded-xl flex items-center justify-center text-white shadow-lg shadow-orange-500/20">
-                        <FaHome size={20} />
-                    </div>
-                    <h1 className="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
-                        ISKCON Admin
-                    </h1>
-                </div>
-
-                {/* Navigation Links */}
-                <div className="flex-1 overflow-y-auto py-6 px-4 space-y-1">
-                    <p className="px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Main Menu</p>
-                    {navItems.map((item) => {
-                        // Check if active (exact match for dashboard, prefix match for others)
-                        const isActive = item.path === '/admin' 
-                            ? pathname === '/admin' 
-                            : pathname.startsWith(item.path);
-                            
-                        return (
-                            <Link 
-                                key={item.name} 
-                                href={item.path}
-                                onClick={() => setIsMobileOpen(false)}
-                                className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium ${
-                                    isActive 
-                                    ? 'bg-orange-50 text-iskcon-orange' 
-                                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                                }`}
-                            >
-                                <span className={`text-lg ${isActive ? 'text-iskcon-orange' : 'text-gray-400'}`}>
-                                    {item.icon}
-                                </span>
-                                {item.name}
-                            </Link>
-                        );
-                    })}
-                </div>
-
-                {/* Logout Button */}
-                <div className="p-4 border-t border-gray-100">
-                    <button
-                        onClick={handleLogout}
-                        className="flex items-center gap-3 w-full px-4 py-3 text-red-500 hover:bg-red-50 rounded-xl transition-all font-medium"
-                    >
-                        <FaSignOutAlt className="text-lg" />
-                        Logout
-                    </button>
-                </div>
+            {/* Desktop Sidebar */}
+            <div className="hidden md:block fixed inset-y-0 left-0 z-40 w-72">
+                {sidebarContent}
             </div>
-            
-            {/* Mobile Overlay */}
-            {isMobileOpen && (
-                <div 
-                    className="fixed inset-0 bg-gray-900 bg-opacity-50 z-30 md:hidden mt-16"
-                    onClick={() => setIsMobileOpen(false)}
-                />
-            )}
+
+            {/* Mobile Sidebar */}
+            <AnimatePresence>
+                {isMobileOpen && (
+                    <>
+                        <motion.div 
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="fixed inset-0 bg-gray-900/40 backdrop-blur-sm z-30 md:hidden mt-16"
+                            onClick={() => setIsMobileOpen(false)}
+                        />
+                        <motion.div 
+                            initial={{ x: "-100%" }}
+                            animate={{ x: 0 }}
+                            exit={{ x: "-100%" }}
+                            transition={{ type: "spring", bounce: 0, duration: 0.4 }}
+                            className="fixed inset-y-0 left-0 z-40 w-72 md:hidden mt-16"
+                        >
+                            {sidebarContent}
+                        </motion.div>
+                    </>
+                )}
+            </AnimatePresence>
         </>
     );
 }

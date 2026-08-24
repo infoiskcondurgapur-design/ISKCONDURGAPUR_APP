@@ -1,18 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { FaArrowRight, FaPrayingHands } from 'react-icons/fa';
 
 export default function HeroContent() {
-  const [isLoaded, setIsLoaded] = useState(false);
-
-  useEffect(() => {
-    setIsLoaded(true);
-  }, []);
-
   return (
     <div className="relative overflow-hidden">
       {/* Hero Section */}
@@ -35,14 +28,14 @@ export default function HeroContent() {
             {/* Left Content */}
             <motion.div
               initial={{ opacity: 0, x: -50 }}
-              animate={isLoaded ? { opacity: 1, x: 0 } : {}}
+              animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.8 }}
               className="text-center lg:text-left"
             >
               {/* Live Badge */}
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
-                animate={isLoaded ? { opacity: 1, y: 0 } : {}}
+                animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2 }}
                 className="inline-flex items-center gap-2 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full shadow-lg mb-6"
               >
@@ -54,7 +47,7 @@ export default function HeroContent() {
               <motion.h1
                 className="text-4xl sm:text-5xl lg:text-7xl font-bold mb-6"
                 initial={{ opacity: 0 }}
-                animate={isLoaded ? { opacity: 1 } : {}}
+                animate={{ opacity: 1 }}
                 transition={{ delay: 0.4 }}
               >
                 <span className="text-gray-800">Welcome to</span>
@@ -69,7 +62,7 @@ export default function HeroContent() {
               {/* Description */}
               <motion.p
                 initial={{ opacity: 0 }}
-                animate={isLoaded ? { opacity: 1 } : {}}
+                animate={{ opacity: 1 }}
                 transition={{ delay: 0.8 }}
                 className="text-lg sm:text-xl text-gray-600 mb-8 max-w-xl mx-auto lg:mx-0"
               >
@@ -80,7 +73,7 @@ export default function HeroContent() {
               {/* CTA Buttons */}
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
-                animate={isLoaded ? { opacity: 1, y: 0 } : {}}
+                animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 1 }}
                 className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start"
               >
@@ -107,8 +100,8 @@ export default function HeroContent() {
 
             {/* Right Content — Image */}
             <motion.div
-              initial={{ opacity: 0, x: 50 }}
-              animate={isLoaded ? { opacity: 1, x: 0 } : {}}
+              initial={{ x: 50 }}
+              animate={{ x: 0 }}
               transition={{ duration: 0.8, delay: 0.3 }}
               className="relative"
             >
@@ -131,7 +124,7 @@ export default function HeroContent() {
                   {/* Floating Info Card */}
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
-                    animate={isLoaded ? { opacity: 1, y: 0 } : {}}
+                    animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 1.2 }}
                     className="absolute bottom-6 left-6 right-6 bg-white/95 backdrop-blur-sm rounded-2xl p-4 shadow-xl"
                   >
@@ -152,13 +145,13 @@ export default function HeroContent() {
               {/* Decorative Cards */}
               <motion.div
                 initial={{ opacity: 0, rotate: -5 }}
-                animate={isLoaded ? { opacity: 1, rotate: -6 } : {}}
+                animate={{ opacity: 1, rotate: -6 }}
                 transition={{ delay: 0.5 }}
                 className="absolute -top-4 -left-4 w-32 h-40 bg-gradient-to-br from-amber-400 to-orange-500 rounded-2xl -z-10 shadow-lg"
               />
               <motion.div
                 initial={{ opacity: 0, rotate: 5 }}
-                animate={isLoaded ? { opacity: 1, rotate: 6 } : {}}
+                animate={{ opacity: 1, rotate: 6 }}
                 transition={{ delay: 0.7 }}
                 className="absolute -bottom-4 -right-4 w-40 h-32 bg-gradient-to-br from-orange-400 to-red-500 rounded-2xl -z-10 shadow-lg"
               />

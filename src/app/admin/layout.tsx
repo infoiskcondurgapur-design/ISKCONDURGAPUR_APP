@@ -13,11 +13,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     }
 
     return (
-        <div className="flex min-h-screen bg-gray-50">
+        <div className="flex min-h-screen bg-[#F8F9FC]">
             <AdminSidebar />
             
             {/* Main Content Area - padded left on desktop to account for the fixed sidebar */}
-            <main className="flex-1 w-full md:ml-64 transition-all duration-300">
+            <main className="flex-1 w-full md:ml-72 transition-all duration-300">
                 {/* Add top padding on mobile to account for the fixed hamburger header */}
                 <div className="md:pt-0 pt-16 h-full min-h-screen">
                     {children}
