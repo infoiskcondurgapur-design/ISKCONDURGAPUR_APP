@@ -3,13 +3,10 @@
 // so Framer Motion / react-icons do NOT block the initial HTML paint.
 import HeroContent from '@/components/HeroContent';
 
-import FeaturedCourses from '@/components/FeaturedCourses';
-
 export default function Home() {
   return (
     <>
       <HeroContent />
-      <FeaturedCourses />
     </>
   );
 }
