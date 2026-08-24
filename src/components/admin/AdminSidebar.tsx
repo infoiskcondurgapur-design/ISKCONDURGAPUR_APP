@@ -5,7 +5,10 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { 
     FaHome, FaUsers, FaCalendarAlt, FaMusic, FaRoute, 
-    FaCog, FaImage, FaSignOutAlt, FaBookOpen, FaBars, FaTimes 
+    FaCog, FaImage, FaSignOutAlt, FaBookOpen, FaBars, FaTimes,
+    FaChartLine, FaDatabase, FaAd, FaBlog, FaBug, FaClipboardList,
+    FaHeartbeat, FaEdit, FaNewspaper, FaQuoteRight, FaFolderOpen,
+    FaShieldAlt, FaVideo
 } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -27,8 +30,21 @@ export default function AdminSidebar() {
         { name: 'Bhajans', path: '/admin/bhajans', icon: <FaMusic /> },
         { name: 'Tours', path: '/admin/tours', icon: <FaRoute /> },
         { name: 'Gallery', path: '/admin/gallery', icon: <FaImage /> },
+        { name: 'Video Library', path: '/admin/video-library', icon: <FaVideo /> },
+        { name: 'Resources', path: '/admin/resources', icon: <FaFolderOpen /> },
+        { name: 'Quotes', path: '/admin/quotes', icon: <FaQuoteRight /> },
+        { name: 'News', path: '/admin/news', icon: <FaNewspaper /> },
+        { name: 'Blog', path: '/admin/blog', icon: <FaBlog /> },
+        { name: 'Homepage Editor', path: '/admin/homepage-editor', icon: <FaEdit /> },
+        { name: 'Banner Management', path: '/admin/banner-management', icon: <FaAd /> },
         { name: 'Users', path: '/admin/users', icon: <FaUsers /> },
+        { name: 'Forms', path: '/admin/forms', icon: <FaClipboardList /> },
         { name: 'Settings', path: '/admin/settings', icon: <FaCog /> },
+        { name: 'Analytics', path: '/admin/analytics', icon: <FaChartLine /> },
+        { name: 'Security', path: '/admin/security', icon: <FaShieldAlt /> },
+        { name: 'Health', path: '/admin/health', icon: <FaHeartbeat /> },
+        { name: 'Backups', path: '/admin/backups', icon: <FaDatabase /> },
+        { name: 'Errors', path: '/admin/errors', icon: <FaBug /> },
     ];
 
     const toggleMobileMenu = () => {

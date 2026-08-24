@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { FaUsers, FaCalendarAlt, FaBookOpen, FaImage, FaHome, FaMusic, FaRoute, FaCog, FaShieldAlt } from 'react-icons/fa';
+import { FaUsers, FaCalendarAlt, FaBookOpen, FaImage, FaHome, FaMusic, FaRoute, FaCog, FaShieldAlt, FaChartLine, FaDatabase, FaAd, FaBlog, FaBug, FaClipboardList, FaHeartbeat, FaEdit, FaNewspaper, FaQuoteRight, FaFolderOpen, FaVideo } from 'react-icons/fa';
 import { motion } from 'framer-motion';
 
 export default function AdminDashboard() {
@@ -231,6 +231,110 @@ export default function AdminDashboard() {
             desc="Global configurations, notice banners, and social media links."
             colorClass="text-gray-700"
             bgHoverClass="hover:border-gray-500/30"
+          />
+          <AdminModuleCard 
+            href="/admin/homepage-editor"
+            icon={<FaEdit size={28} />}
+            title="Homepage Editor"
+            desc="Customize homepage sections, hero content, and featured highlights."
+            colorClass="text-orange-500"
+            bgHoverClass="hover:border-orange-500/30"
+          />
+          <AdminModuleCard 
+            href="/admin/banner-management"
+            icon={<FaAd size={28} />}
+            title="Banner Management"
+            desc="Create and schedule announcement banners across the website."
+            colorClass="text-pink-500"
+            bgHoverClass="hover:border-pink-500/30"
+          />
+          <AdminModuleCard 
+            href="/admin/resources"
+            icon={<FaFolderOpen size={28} />}
+            title="Resource Manager"
+            desc="Upload books, PDFs, and downloadable materials for visitors."
+            colorClass="text-indigo-500"
+            bgHoverClass="hover:border-indigo-500/30"
+          />
+          <AdminModuleCard 
+            href="/admin/quotes"
+            icon={<FaQuoteRight size={28} />}
+            title="Quote Manager"
+            desc="Curate daily inspirational quotes from Srila Prabhupada and scriptures."
+            colorClass="text-cyan-600"
+            bgHoverClass="hover:border-cyan-500/30"
+          />
+          <AdminModuleCard 
+            href="/admin/news"
+            icon={<FaNewspaper size={28} />}
+            title="News Updates"
+            desc="Publish temple news, announcements, and community updates."
+            colorClass="text-red-500"
+            bgHoverClass="hover:border-red-500/30"
+          />
+          <AdminModuleCard 
+            href="/admin/blog"
+            icon={<FaBlog size={28} />}
+            title="Blog Posts"
+            desc="Write spiritual articles and blog posts for the community."
+            colorClass="text-lime-600"
+            bgHoverClass="hover:border-lime-500/30"
+          />
+          <AdminModuleCard 
+            href="/admin/video-library"
+            icon={<FaVideo size={28} />}
+            title="Video Library"
+            desc="Manage lecture videos, event recordings, and media playlists."
+            colorClass="text-rose-500"
+            bgHoverClass="hover:border-rose-500/30"
+          />
+          <AdminModuleCard 
+            href="/admin/forms"
+            icon={<FaClipboardList size={28} />}
+            title="Form Submissions"
+            desc="Review contact forms, volunteer applications, and inquiries."
+            colorClass="text-sky-600"
+            bgHoverClass="hover:border-sky-500/30"
+          />
+          <AdminModuleCard 
+            href="/admin/analytics"
+            icon={<FaChartLine size={28} />}
+            title="Analytics"
+            desc="Track visitor traffic, engagement, and content performance."
+            colorClass="text-emerald-600"
+            bgHoverClass="hover:border-emerald-500/30"
+          />
+          <AdminModuleCard 
+            href="/admin/security"
+            icon={<FaShieldAlt size={28} />}
+            title="Security Center"
+            desc="Monitor blocked IPs, rate limits, and security alerts."
+            colorClass="text-rose-600"
+            bgHoverClass="hover:border-rose-500/30"
+          />
+          <AdminModuleCard 
+            href="/admin/health"
+            icon={<FaHeartbeat size={28} />}
+            title="System Health"
+            desc="Check database connectivity, API status, and uptime monitors."
+            colorClass="text-green-600"
+            bgHoverClass="hover:border-green-500/30"
+          />
+          <AdminModuleCard 
+            href="/admin/backups"
+            icon={<FaDatabase size={28} />}
+            title="Backups"
+            desc="Create, download, and restore database backups."
+            colorClass="text-amber-600"
+            bgHoverClass="hover:border-amber-500/30"
+          />
+          <AdminModuleCard 
+            href="/admin/errors"
+            icon={<FaBug size={28} />}
+            title="Error Logs"
+            desc="Inspect application errors and troubleshoot issues quickly."
+            colorClass="text-red-600"
+            bgHoverClass="hover:border-red-500/30"
           />
           
         </motion.div>
