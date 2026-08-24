@@ -21,7 +21,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     '/spiritual-life/daily-life',
     '/spiritual-life/daily-worship',
     '/spiritual-life/festivals',
-    '/spiritual-life/initiation',
     '/spiritual-life/sadhana',
     '/resources',
     '/resources/bhajans',

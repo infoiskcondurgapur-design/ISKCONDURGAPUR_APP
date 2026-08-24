@@ -131,7 +131,6 @@ const navigation = [
     href: '/spiritual-life',
     icon: <FaBook className="mr-2" />,
     submenu: [
-      { name: 'Initiation', href: '/spiritual-life/initiation' },
       { name: 'All Courses', href: '/courses' },
       { name: 'Spiritual Tours', href: '/spiritual-tours' },
       { name: 'Prasadam', href: '/prasadam' }
