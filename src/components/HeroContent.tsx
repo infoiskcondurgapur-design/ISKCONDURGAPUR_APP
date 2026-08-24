@@ -2,10 +2,39 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { FaArrowRight, FaPrayingHands } from 'react-icons/fa';
 
 export default function HeroContent() {
+  const [content, setContent] = useState({
+    heroTitle: 'ISKCON Durgapur',
+    heroSubtitle: '',
+    heroCtaText: 'Visit Temple',
+    heroCtaLink: '/about',
+    welcomeMessage: ''
+  });
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const res = await fetch('/api/settings', { cache: 'no-store' });
+        const result = await res.json();
+        if (res.ok && result.data) {
+          setContent(prev => ({
+            heroTitle: result.data.heroTitle || prev.heroTitle,
+            heroSubtitle: result.data.heroSubtitle || prev.heroSubtitle,
+            heroCtaText: result.data.heroCtaText || prev.heroCtaText,
+            heroCtaLink: result.data.heroCtaLink || prev.heroCtaLink,
+            welcomeMessage: result.data.welcomeMessage || prev.welcomeMessage
+          }));
+        }
+      } catch (err) {
+        console.error('Error loading homepage content:', err);
+      }
+    };
+    load();
+  }, []);
   return (
     <div className="relative overflow-hidden">
       {/* Hero Section */}
@@ -53,9 +82,20 @@ export default function HeroContent() {
                 <span className="text-gray-800">Welcome to</span>
                 <br />
                 <span className="bg-gradient-to-r from-orange-600 via-amber-500 to-orange-600 bg-clip-text text-transparent">
-                  ISKCON Durgapur
+                  {content.heroTitle}
                 </span>
               </motion.h1>
+
+              {content.heroSubtitle && (
+                <motion.p
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.6 }}
+                  className="text-xl sm:text-2xl font-semibold text-orange-700 mb-4 tracking-wide"
+                >
+                  {content.heroSubtitle}
+                </motion.p>
+              )}
 
 
 
@@ -66,8 +106,7 @@ export default function HeroContent() {
                 transition={{ delay: 0.8 }}
                 className="text-lg sm:text-xl text-gray-600 mb-8 max-w-xl mx-auto lg:mx-0"
               >
-                Experience the divine atmosphere of Krishna Consciousness.
-                Join us for daily aartis, spiritual discourses, and the nectarean prasadam.
+                {content.welcomeMessage || 'Experience the divine atmosphere of Krishna Consciousness. Join us for daily aartis, spiritual discourses, and the nectarean prasadam.'}
               </motion.p>
 
               {/* CTA Buttons */}
@@ -78,11 +117,11 @@ export default function HeroContent() {
                 className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start"
               >
                 <Link
-                  href="/about"
+                  href={content.heroCtaLink || '/about'}
                   className="group relative bg-gradient-to-r from-orange-500 to-amber-500 text-white px-8 py-4 rounded-2xl font-semibold text-lg shadow-xl shadow-orange-500/25 hover:shadow-orange-500/40 transition-all duration-300 overflow-hidden"
                 >
                   <span className="relative z-10 flex items-center justify-center gap-2">
-                    Visit Temple
+                    {content.heroCtaText || 'Visit Temple'}
                     <FaArrowRight className="group-hover:translate-x-1 transition-transform" />
                   </span>
                 </Link>

@@ -11,6 +11,13 @@ const SettingsSchema = new mongoose.Schema({
     instagramUrl: { type: String, default: '' },
     noticeBannerText: { type: String, default: '' },
     noticeBannerEnabled: { type: Boolean, default: false },
+    heroTitle: { type: String, default: '' },
+    heroSubtitle: { type: String, default: '' },
+    heroCtaText: { type: String, default: '' },
+    heroCtaLink: { type: String, default: '' },
+    missionTitle: { type: String, default: '' },
+    missionText: { type: String, default: '' },
+    welcomeMessage: { type: String, default: '' },
     updatedAt: { type: Date, default: Date.now }
 });
 

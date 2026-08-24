@@ -1,59 +1,75 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
-import { FaClipboardList, FaEnvelope, FaTrash, FaCheck, FaEye, FaSearch, FaFilter } from 'react-icons/fa';
+import { motion } from 'framer-motion';
+import { FaTrash, FaInbox, FaRedo, FaEnvelopeOpenText } from 'react-icons/fa';
 
 interface Submission {
-  id: string;
+  _id: string;
   name: string;
   email: string;
   phone: string;
-  type: 'Contact' | 'Membership' | 'Volunteer';
+  type: string;
   message: string;
+  formSlug?: string;
   createdAt: string;
-  status: 'Pending' | 'Reviewed';
 }
 
-export default function FormsAdminPage() {
+export default function SubmissionsAdminPage() {
   const router = useRouter();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [filterType, setFilterType] = useState('All'); // 'All', 'Contact', 'Membership', 'Volunteer'
-  const [submissions, setSubmissions] = useState<Submission[]>([
-    { id: '1', name: 'Abhijit Maji', email: 'abhijit.maji@gmail.com', phone: '9876543210', type: 'Membership', message: 'I would like to apply for lifetime membership at ISKCON Durgapur.', createdAt: '2026-06-11 10:15 AM', status: 'Pending' },
-    { id: '2', name: 'Sourav Das', email: 'sourav.das@yahoo.com', phone: '8765432109', type: 'Volunteer', message: 'Interested in volunteering for the upcoming Janmashtami festival decoration and crowd management.', createdAt: '2026-06-10 03:40 PM', status: 'Pending' },
-    { id: '3', name: 'Priya Sen', email: 'priya.sen@outlook.com', phone: '7654321098', type: 'Contact', message: 'Requesting info regarding Bhagavad Gita evening classes schedule.', createdAt: '2026-06-09 11:20 AM', status: 'Reviewed' },
-    { id: '4', name: 'Debasish Dey', email: 'debasish.dey@gmail.com', phone: '9012345678', type: 'Membership', message: 'How do I pay the lifetime membership fee online?', createdAt: '2026-06-08 09:05 AM', status: 'Reviewed' }
-  ]);
+  const [error, setError] = useState<string | null>(null);
+  const [typeFilter, setTypeFilter] = useState('All');
+  const [selected, setSelected] = useState<Submission | null>(null);
+
+  const authHeaders = (): Record<string, string> => {
+    const token = localStorage.getItem('iskcon_admin_token');
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  };
 
   useEffect(() => {
-    const checkAuth = () => {
-      const authToken = localStorage.getItem('iskcon_admin_token');
-      if (!authToken) {
-        router.push('/admin/login');
-        return;
-      }
-      setIsAuthenticated(true);
-      setIsLoading(false);
-    };
-    checkAuth();
+    if (!localStorage.getItem('iskcon_admin_token')) {
+      router.push('/admin/login');
+      return;
+    }
+    setIsAuthenticated(true);
+    loadSubmissions();
   }, [router]);
 
-  const handleReview = (id: string) => {
-    setSubmissions(prev => prev.map(s => s.id === id ? { ...s, status: 'Reviewed' as const } : s));
+  const loadSubmissions = useCallback(async () => {
+    try {
+      setError(null);
+      const res = await fetch('/api/submissions', { headers: authHeaders() });
+      const result = await res.json();
+      if (res.ok && result.data) setSubmissions(result.data);
+      else if (res.status === 401) router.push('/admin/login');
+      else setError(result.message || result.error || 'Failed to load submissions');
+    } catch (err) {
+      console.error('Error loading submissions:', err);
+      setError('Failed to connect to the server');
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Delete this submission permanently?')) return;
+    try {
+      const res = await fetch(`/api/submissions/${id}`, { method: 'DELETE', headers: authHeaders() });
+      if (res.ok) {
+        setSubmissions(prev => prev.filter(s => s._id !== id));
+        setSelected(null);
+      } else alert('Failed to delete submission');
+    } catch (err) {
+      console.error('Error deleting submission:', err);
+      alert('Failed to delete submission');
+    }
   };
 
-  const handleDelete = (id: string) => {
-    setSubmissions(prev => prev.filter(s => s.id !== id));
-  };
-
-  const filteredSubmissions = filterType === 'All' 
-    ? submissions 
-    : submissions.filter(s => s.type === filterType);
-
-  if (isLoading) {
+  if (!isAuthenticated) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#F8F9FC]">
         <div className="w-16 h-16 border-t-4 border-[#FF6B00] border-solid rounded-full animate-spin"></div>
@@ -61,130 +77,90 @@ export default function FormsAdminPage() {
     );
   }
 
+  const types = ['All', ...Array.from(new Set(submissions.map(s => s.type).filter(Boolean)))];
+  const filtered = typeFilter === 'All' ? submissions : submissions.filter(s => s.type === typeFilter);
+
   return (
     <div className="min-h-screen bg-[#F8F9FC] p-6 lg:p-10 font-sans">
       <div className="max-w-[1600px] mx-auto">
-        
-        {/* Header */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10">
+
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 mb-10">
           <div>
             <h1 className="text-4xl font-black tracking-tight text-gray-900 mb-2">
               Form <span className="text-[#FF6B00]">Submissions</span>
             </h1>
-            <p className="text-gray-500 font-medium">
-              Review messages, volunteer enrollments, and membership applications submitted by site visitors.
-            </p>
+            <p className="text-gray-500 font-medium">Messages and enquiries received through website forms.</p>
           </div>
-          
-          {/* Tab selector */}
-          <div className="flex bg-white p-1.5 rounded-2xl shadow-sm border border-gray-100 flex-wrap">
-            {[
-              { id: 'All', name: 'All' },
-              { id: 'Contact', name: 'Contact' },
-              { id: 'Membership', name: 'Membership' },
-              { id: 'Volunteer', name: 'Volunteer' }
-            ].map(tab => (
-              <button
-                key={tab.id}
-                onClick={() => setFilterType(tab.id)}
-                className={`px-4 py-2 rounded-xl text-sm font-bold transition-all duration-200 ${
-                  filterType === tab.id
-                    ? 'bg-orange-500 text-white shadow-md shadow-orange-500/10'
-                    : 'text-gray-500 hover:text-gray-800'
-                }`}
-              >
-                {tab.name}
-              </button>
-            ))}
-          </div>
+          <button onClick={loadSubmissions} className="px-5 py-3 bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 rounded-2xl font-bold flex items-center gap-2 active:scale-95 transition-all">
+            <FaRedo size={13} /> Refresh
+          </button>
         </div>
 
-        {/* Submissions List */}
-        <div className="bg-white rounded-3xl p-6 shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-gray-100 overflow-hidden">
-          <h3 className="text-xl font-bold text-gray-900 mb-6 tracking-tight flex items-center gap-2">
-            <FaClipboardList className="text-orange-500" /> Form Entries ({filteredSubmissions.length})
-          </h3>
-          
-          <div className="overflow-x-auto">
-            {filteredSubmissions.length > 0 ? (
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="border-b border-gray-100 text-xs font-bold text-gray-400 uppercase tracking-wider">
-                    <th className="pb-3 pr-4">Submitter Info</th>
-                    <th className="pb-3 px-4">Form Type</th>
-                    <th className="pb-3 px-4">Message Snippet</th>
-                    <th className="pb-3 px-4">Submitted At</th>
-                    <th className="pb-3 px-4">Status</th>
-                    <th className="pb-3 pl-4 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-50">
-                  {filteredSubmissions.map(sub => (
-                    <tr key={sub.id} className="group">
-                      <td className="py-4 pr-4 text-sm font-semibold text-gray-800">
-                        <div>{sub.name}</div>
-                        <div className="text-xs text-gray-400 font-normal">{sub.email} | {sub.phone}</div>
-                      </td>
-                      <td className="py-4 px-4 text-sm font-medium">
-                        <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
-                          sub.type === 'Membership' 
-                            ? 'bg-purple-50 text-purple-600 border border-purple-100'
-                            : sub.type === 'Volunteer'
-                              ? 'bg-blue-50 text-blue-600 border border-blue-100'
-                              : 'bg-emerald-50 text-emerald-600 border border-emerald-100'
-                        }`}>
-                          {sub.type}
-                        </span>
-                      </td>
-                      <td className="py-4 px-4 text-sm text-gray-500 max-w-[280px] truncate">
-                        {sub.message}
-                      </td>
-                      <td className="py-4 px-4 text-sm font-medium text-gray-400">{sub.createdAt}</td>
-                      <td className="py-4 px-4 text-sm font-medium">
-                        <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
-                          sub.status === 'Pending' 
-                            ? 'bg-amber-50 text-amber-600 border border-amber-100'
-                            : 'bg-gray-50 text-gray-400 border border-gray-100'
-                        }`}>
-                          {sub.status}
-                        </span>
-                      </td>
-                      <td className="py-4 pl-4 text-sm text-right space-x-2">
-                        <button 
-                          className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg transition-colors inline-flex"
-                          title="View Details"
-                          onClick={() => alert(`Details:\n\nName: ${sub.name}\nEmail: ${sub.email}\nPhone: ${sub.phone}\nMessage: ${sub.message}`)}
-                        >
-                          <FaEye size={14} />
-                        </button>
-                        {sub.status === 'Pending' && (
-                          <button 
-                            className="p-2 text-emerald-500 hover:bg-emerald-50 rounded-lg transition-colors inline-flex"
-                            title="Mark as Reviewed"
-                            onClick={() => handleReview(sub.id)}
-                          >
-                            <FaCheck size={14} />
-                          </button>
-                        )}
-                        <button 
-                          className="p-2 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors inline-flex"
-                          title="Delete Entry"
-                          onClick={() => handleDelete(sub.id)}
-                        >
-                          <FaTrash size={14} />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            ) : (
-              <div className="text-center py-12 text-gray-500 font-medium">
-                No form submissions found in this category.
-              </div>
-            )}
-          </div>
+        {error && <div className="mb-8 bg-amber-50 border border-amber-200 text-amber-800 rounded-2xl p-4 text-sm font-semibold">{error}</div>}
+
+        <div className="flex gap-2 flex-wrap mb-6">
+          {types.map(t => (
+            <button
+              key={t}
+              onClick={() => setTypeFilter(t)}
+              className={`px-4 py-2 rounded-xl text-sm font-bold transition-all active:scale-95 ${typeFilter === t ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-lg shadow-orange-500/20' : 'bg-white border border-gray-200 text-gray-600 hover:border-orange-300'}`}
+            >
+              {t} {t !== 'All' && `(${submissions.filter(s => s.type === t).length})`}
+            </button>
+          ))}
         </div>
+
+        {filtered.length > 0 ? (
+          <motion.ul initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="space-y-3 max-h-[70vh] overflow-y-auto pr-1">
+            {filtered.map(sub => (
+              <li key={sub._id} className={`bg-white rounded-3xl p-5 shadow-[0_8px_30px_rgb(0,0,0,0.02)] border transition-colors group ${selected?._id === sub._id ? 'border-orange-300' : 'border-gray-100 hover:border-orange-200'}`}>
+                <div
+                  className="cursor-pointer"
+                  onClick={() => setSelected(selected?._id === sub._id ? null : sub)}
+                >
+                  <div className="flex justify-between items-start gap-4">
+                    <div className="flex items-start gap-3 min-w-0">
+                      <div className="bg-orange-50 text-orange-600 p-2.5 rounded-xl flex-shrink-0">
+                        <FaEnvelopeOpenText size={14} />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h4 className="font-bold text-gray-900">{sub.name}</h4>
+                          {sub.type && <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-orange-50 text-orange-700">{sub.type}</span>}
+                          <span className="text-xs text-gray-400 font-medium">{new Date(sub.createdAt).toLocaleString('en-IN')}</span>
+                        </div>
+                        <p className="text-sm text-gray-500 truncate mt-0.5">{sub.email} · {sub.phone}</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={e => { e.stopPropagation(); handleDelete(sub._id); }}
+                      aria-label="Delete submission"
+                      className="p-2.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-xl opacity-60 group-hover:opacity-100 transition-all flex-shrink-0"
+                    >
+                      <FaTrash size={14} />
+                    </button>
+                  </div>
+                  {selected?._id === sub._id && (
+                    <div className="mt-4 pt-4 border-t border-gray-100">
+                      <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed bg-gray-50 rounded-xl p-4">{sub.message}</p>
+                      <div className="mt-3 flex gap-3">
+                        <a href={`mailto:${sub.email}?subject=Re: ${encodeURIComponent(sub.type || 'Your enquiry')}`} className="text-xs font-bold text-blue-600 hover:text-blue-800">Reply via Email →</a>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </li>
+            ))}
+          </motion.ul>
+        ) : (
+          !isLoading && (
+            <div className="bg-white rounded-3xl p-16 text-center border border-gray-100">
+              <FaInbox className="mx-auto text-gray-200 mb-4" size={48} />
+              <h3 className="font-bold text-gray-800 mb-1">No submissions yet</h3>
+              <p className="text-sm text-gray-500">Enquiries from public forms will appear here.</p>
+            </div>
+          )
+        )}
 
       </div>
     </div>

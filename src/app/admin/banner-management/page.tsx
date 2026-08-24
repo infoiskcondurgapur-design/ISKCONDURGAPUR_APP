@@ -1,220 +1,152 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { FaArrowLeft, FaSave, FaBullhorn, FaInfoCircle, FaPlus, FaTrash } from 'react-icons/fa';
+import { motion } from 'framer-motion';
+import { FaBullhorn, FaSave, FaEye, FaEyeSlash } from 'react-icons/fa';
 
-export default function BannerManagement() {
+export default function BannerManagementPage() {
   const router = useRouter();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [enabled, setEnabled] = useState(false);
+  const [text, setText] = useState('');
+  const [originalText, setOriginalText] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-  const [banners, setBanners] = useState([
-    { id: 1, text: 'Janmashtami Celebrations will start from August 25th! Register for special pujas.', type: 'info', enabled: true },
-    { id: 2, text: 'New Bhagavad Gita course starts next Sunday. Limited seats remaining.', type: 'warning', enabled: false },
-    { id: 3, text: 'Temple construction updates: Watch the latest video on our video library.', type: 'success', enabled: false }
-  ]);
-
-  const [newBannerText, setNewBannerText] = useState('');
-  const [newBannerType, setNewBannerType] = useState('info');
+  const authHeaders = (): Record<string, string> => {
+    const token = localStorage.getItem('iskcon_admin_token');
+    return token ? { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' };
+  };
 
   useEffect(() => {
-    const checkAuth = () => {
-      const authToken = localStorage.getItem('iskcon_admin_token');
-      if (!authToken) {
-        router.push('/admin/login');
-        return;
-      }
-      setIsAuthenticated(true);
-    };
-    checkAuth();
+    if (!localStorage.getItem('iskcon_admin_token')) {
+      router.push('/admin/login');
+      return;
+    }
+    setIsAuthenticated(true);
+    loadSettings();
   }, [router]);
 
-  const handleToggle = (id: number) => {
-    setBanners(prev => prev.map(banner => {
-      if (banner.id === id) {
-        return { ...banner, enabled: !banner.enabled };
+  const loadSettings = useCallback(async () => {
+    try {
+      setMessage(null);
+      const res = await fetch('/api/settings');
+      const result = await res.json();
+      if (res.ok && result.data) {
+        setEnabled(!!result.data.noticeBannerEnabled);
+        setText(result.data.noticeBannerText || '');
+        setOriginalText(result.data.noticeBannerText || '');
+      } else {
+        setMessage({ type: 'error', text: result.message || result.error || 'Failed to load banner settings' });
       }
-      // If we enable one, disable the others so only one is active at a time
-      if (banner.id !== id && !banner.enabled) {
-        return banner;
-      }
-      return { ...banner, enabled: false };
-    }));
-  };
+    } catch (err) {
+      console.error('Error loading settings:', err);
+      setMessage({ type: 'error', text: 'Failed to connect to the server' });
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
-  const handleDelete = (id: number) => {
-    setBanners(prev => prev.filter(banner => banner.id !== id));
-  };
-
-  const handleAddBanner = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newBannerText.trim()) return;
-
-    setBanners(prev => [
-      ...prev,
-      {
-        id: Date.now(),
-        text: newBannerText,
-        type: newBannerType,
-        enabled: false
-      }
-    ]);
-    setNewBannerText('');
-    setMessage({ type: 'success', text: 'New banner template added successfully!' });
-    setTimeout(() => setMessage(null), 3000);
-  };
-
-  const handleSave = () => {
-    setIsSaving(true);
-    setTimeout(() => {
+    if (enabled && !text.trim()) {
+      setMessage({ type: 'error', text: 'Please enter the banner message before enabling it.' });
+      return;
+    }
+    try {
+      setIsSaving(true);
+      const res = await fetch('/api/settings', { method: 'PUT', headers: authHeaders(), body: JSON.stringify({ noticeBannerEnabled: enabled, noticeBannerText: text.trim() }) });
+      const result = await res.json();
+      if (res.ok) {
+        setOriginalText(text.trim());
+        setMessage({ type: 'success', text: 'Banner saved. Visitors will see it on their next page view.' });
+      } else if (res.status === 401) router.push('/admin/login');
+      else setMessage({ type: 'error', text: result.message || result.error || 'Failed to save banner' });
+    } catch (err) {
+      console.error('Error saving banner:', err);
+      setMessage({ type: 'error', text: 'Failed to save banner' });
+    } finally {
       setIsSaving(false);
-      setMessage({ type: 'success', text: 'Banners config saved successfully!' });
-      setTimeout(() => setMessage(null), 3500);
-    }, 1000);
+    }
   };
+
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#F8F9FC]">
+        <div className="w-16 h-16 border-t-4 border-[#FF6B00] border-solid rounded-full animate-spin"></div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6 md:p-12">
-      <div className="max-w-4xl mx-auto">
-        <div className="mb-6">
-          <Link href="/admin" className="inline-flex items-center gap-2 text-gray-500 hover:text-iskcon-orange transition-colors font-medium">
-            <FaArrowLeft /> Back to Dashboard
-          </Link>
-        </div>
+    <div className="min-h-screen bg-[#F8F9FC] p-6 lg:p-10 font-sans">
+      <div className="max-w-3xl mx-auto">
 
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Notice Banner Management</h1>
-            <p className="text-gray-500 mt-1">Control active announcement headers shown at the top of the website.</p>
-          </div>
+        <div className="mb-10">
+          <h1 className="text-4xl font-black tracking-tight text-gray-900 mb-2">
+            Notice <span className="text-[#FF6B00]">Banner</span>
+          </h1>
+          <p className="text-gray-500 font-medium">The floating announcement card shown on every public page.</p>
         </div>
 
         {message && (
-          <div className={`p-4 rounded-xl mb-8 flex items-start gap-3 border ${
-            message.type === 'success' 
-              ? 'bg-green-50 text-green-700 border-green-200' 
-              : 'bg-red-50 text-red-700 border-red-200'
-          }`}>
-            <FaInfoCircle className="mt-0.5 text-lg flex-shrink-0" />
-            <span className="font-medium">{message.text}</span>
+          <div className={`mb-8 rounded-2xl p-4 text-sm font-semibold border ${message.type === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-amber-50 border-amber-200 text-amber-800'}`}>
+            {message.text}
           </div>
         )}
 
-        <div className="grid grid-cols-1 gap-8">
-          {/* Add Banner Template */}
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-            <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-              <span className="p-2 bg-orange-50 text-iskcon-orange rounded-lg"><FaPlus size={14} /></span>
-              Add Banner Template
-            </h2>
-            <form onSubmit={handleAddBanner} className="space-y-4">
+        <motion.form initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} onSubmit={handleSave} className="bg-white rounded-3xl p-6 lg:p-8 shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-gray-100 space-y-6">
+
+          <label className={`flex justify-between items-center gap-4 p-5 rounded-2xl cursor-pointer transition-colors ${enabled ? 'bg-orange-50/60 border border-orange-200' : 'bg-gray-50 border border-gray-200 hover:border-orange-200'}`}>
+            <span>
+              <span className="block font-bold text-gray-900 flex items-center gap-2">
+                {enabled ? <FaBullhorn className="text-orange-500 animate-pulse" /> : <FaEyeSlash className="text-gray-400" />}
+                {enabled ? 'Banner is LIVE on the website' : 'Banner is currently hidden'}
+              </span>
+              <span className="block text-sm text-gray-500 mt-1">Visitors can dismiss it; it stays hidden for them until the message changes.</span>
+            </span>
+            <input type="checkbox" checked={enabled} onChange={e => setEnabled(e.target.checked)} className="sr-only peer" />
+            <span className={`relative w-12 h-7 rounded-full transition-colors flex-shrink-0 after:absolute after:top-1 after:left-1 after:w-5 after:h-5 after:bg-white after:rounded-full after:transition-transform ${enabled ? 'bg-gradient-to-r from-orange-500 to-amber-500 after:translate-x-5' : 'bg-gray-300'}`}></span>
+          </label>
+
+          <div>
+            <label htmlFor="notice-text" className="block font-bold text-gray-800 mb-2">Banner Message</label>
+            <textarea
+              id="notice-text"
+              rows={4}
+              value={text}
+              onChange={e => setText(e.target.value)}
+              placeholder="e.g. Sunday Love Feast every week at 6 PM — all are welcome!"
+              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-orange-400 focus:ring-2 focus:ring-orange-100 outline-none text-sm font-medium resize-y"
+            />
+            <p className="text-xs text-gray-400 mt-2">{text.length} characters — keep it short and welcoming.</p>
+          </div>
+
+          <button
+            type="submit"
+            disabled={isSaving || (enabled === !!originalText && text === originalText && enabled === false)}
+            className="w-full py-3.5 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 disabled:opacity-60 text-white rounded-xl font-bold shadow-lg shadow-orange-500/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+          >
+            <FaSave size={14} /> {isSaving ? 'Saving...' : 'Save Banner'}
+          </button>
+
+        </motion.form>
+
+        {enabled && text.trim() && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-8">
+            <p className="text-sm font-bold text-gray-600 mb-3 flex items-center gap-2"><FaEye /> Live Preview</p>
+            <div className="bg-white border-l-4 border-[#FF6B00] p-4 rounded-2xl shadow-xl max-w-sm w-full flex gap-3 items-start">
+              <div className="bg-orange-50 text-[#FF6B00] p-2.5 rounded-xl flex-shrink-0 mt-0.5"><FaBullhorn className="animate-bounce" /></div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Notice Message Text</label>
-                <textarea
-                  value={newBannerText}
-                  onChange={e => setNewBannerText(e.target.value)}
-                  rows={2}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-iskcon-orange/20 focus:border-iskcon-orange transition-all bg-gray-50/30 resize-none"
-                  placeholder="E.g., Special worship schedules on Ekadashi day..."
-                  required
-                />
+                <h4 className="font-bold text-sm text-gray-900 mb-1 tracking-wide">Announcement</h4>
+                <p className="text-xs text-gray-600 leading-relaxed">{text}</p>
               </div>
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <div className="flex items-center gap-4">
-                  <label className="text-sm font-semibold text-gray-700">Banner Color Scheme:</label>
-                  <select
-                    value={newBannerType}
-                    onChange={e => setNewBannerType(e.target.value)}
-                    className="px-3 py-2 border border-gray-200 rounded-xl bg-white focus:outline-none"
-                  >
-                    <option value="info">Info (Blue)</option>
-                    <option value="warning">Warning (Orange)</option>
-                    <option value="success">Success (Green)</option>
-                  </select>
-                </div>
-                <button
-                  type="submit"
-                  className="bg-iskcon-orange text-white px-6 py-2.5 rounded-xl font-semibold hover:bg-orange-700 transition"
-                >
-                  Create Banner
-                </button>
-              </div>
-            </form>
-          </div>
-
-          {/* Active Banner List */}
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-            <h2 className="text-xl font-bold text-gray-800 mb-6 flex items-center gap-2 border-b border-gray-100 pb-3">
-              <span className="p-2 bg-red-50 text-red-500 rounded-lg"><FaBullhorn size={16} /></span>
-              Notice Templates List
-            </h2>
-            <div className="space-y-4">
-              {banners.map(banner => (
-                <div 
-                  key={banner.id} 
-                  className={`p-5 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all duration-300 ${
-                    banner.enabled 
-                      ? 'border-orange-500 bg-orange-50/20' 
-                      : 'border-gray-100 bg-white'
-                  }`}
-                >
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md ${
-                        banner.type === 'warning' 
-                          ? 'bg-orange-100 text-orange-700' 
-                          : banner.type === 'success'
-                            ? 'bg-green-100 text-green-700'
-                            : 'bg-blue-100 text-blue-700'
-                      }`}>
-                        {banner.type}
-                      </span>
-                      {banner.enabled && (
-                        <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-orange-500 text-white animate-pulse">Active Banner</span>
-                      )}
-                    </div>
-                    <p className="text-gray-700 font-medium text-[15px] leading-relaxed">{banner.text}</p>
-                  </div>
-
-                  <div className="flex items-center gap-4 self-end sm:self-center">
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={banner.enabled}
-                        onChange={() => handleToggle(banner.id)}
-                        className="sr-only peer"
-                      />
-                      <div className="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-iskcon-orange"></div>
-                    </label>
-                    <button
-                      onClick={() => handleDelete(banner.id)}
-                      className="p-2.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition"
-                      title="Delete Template"
-                    >
-                      <FaTrash size={14} />
-                    </button>
-                  </div>
-                </div>
-              ))}
-              {banners.length === 0 && (
-                <div className="text-center py-10 text-gray-400 font-medium">No notice banner templates exist.</div>
-              )}
             </div>
+          </motion.div>
+        )}
 
-            <div className="flex justify-end mt-8 pt-6 border-t border-gray-100">
-              <button
-                onClick={handleSave}
-                disabled={isSaving}
-                className="bg-iskcon-orange text-white px-8 py-3 rounded-xl font-bold hover:bg-orange-700 transition flex items-center gap-2 shadow-lg disabled:opacity-75"
-              >
-                {isSaving ? 'Saving...' : <><FaSave /> Save Config</>}
-              </button>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   );

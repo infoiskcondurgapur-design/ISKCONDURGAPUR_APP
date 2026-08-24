@@ -3,66 +3,80 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { FaDatabase, FaDownload, FaTrash, FaUndo, FaClock, FaCheckCircle, FaSpinner } from 'react-icons/fa';
+import { FaDatabase, FaDownload, FaRedo, FaTable } from 'react-icons/fa';
 
-interface BackupFile {
-  id: string;
-  filename: string;
-  size: string;
-  createdAt: string;
-  type: string;
+interface CollectionStat {
+  name: string;
+  count: number;
 }
 
 export default function BackupsAdminPage() {
   const router = useRouter();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [isBackupRunning, setIsBackupRunning] = useState(false);
-  const [backups, setBackups] = useState<BackupFile[]>([
-    { id: '1', filename: 'iskcon_db_backup_2026-06-11.tar.gz', size: '12.4 MB', createdAt: '2026-06-11 02:00 AM', type: 'System Auto' },
-    { id: '2', filename: 'iskcon_db_backup_2026-06-10.tar.gz', size: '12.3 MB', createdAt: '2026-06-10 02:00 AM', type: 'System Auto' },
-    { id: '3', filename: 'iskcon_db_backup_manual_2026-06-09.tar.gz', size: '12.1 MB', createdAt: '2026-06-09 04:30 PM', type: 'Manual' },
-    { id: '4', filename: 'iskcon_db_backup_2026-06-08.tar.gz', size: '12.0 MB', createdAt: '2026-06-08 02:00 AM', type: 'System Auto' }
-  ]);
+  const [collections, setCollections] = useState<CollectionStat[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [generatedAt, setGeneratedAt] = useState('');
+  const [isDownloading, setIsDownloading] = useState(false);
+
+  const authHeaders = (): Record<string, string> => {
+    const token = localStorage.getItem('iskcon_admin_token');
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  };
 
   useEffect(() => {
-    const checkAuth = () => {
-      const authToken = localStorage.getItem('iskcon_admin_token');
-      if (!authToken) {
-        router.push('/admin/login');
-        return;
-      }
-      setIsAuthenticated(true);
-      setIsLoading(false);
-    };
-    checkAuth();
+    if (!localStorage.getItem('iskcon_admin_token')) {
+      router.push('/admin/login');
+      return;
+    }
+    setIsAuthenticated(true);
+    loadStats();
   }, [router]);
 
-  const handleCreateBackup = () => {
-    setIsBackupRunning(true);
-    setTimeout(() => {
-      const date = new Date();
-      const dateStr = date.toISOString().split('T')[0];
-      const timeStr = date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-      
-      const newBackup: BackupFile = {
-        id: Date.now().toString(),
-        filename: `iskcon_db_backup_manual_${dateStr}.tar.gz`,
-        size: `${(11.8 + Math.random()).toFixed(1)} MB`,
-        createdAt: `${dateStr} ${timeStr}`,
-        type: 'Manual'
-      };
-
-      setBackups(prev => [newBackup, ...prev]);
-      setIsBackupRunning(false);
-    }, 2500);
+  const loadStats = async () => {
+    try {
+      setError(null);
+      const res = await fetch('/api/admin/backups', { headers: authHeaders() });
+      const result = await res.json();
+      if (res.ok && result.data) {
+        setCollections(result.data.collections || []);
+        setGeneratedAt(new Date(result.data.generatedAt).toLocaleString('en-IN'));
+      } else if (res.status === 401) {
+        router.push('/admin/login');
+      } else {
+        setError(result.message || 'Failed to load backup statistics');
+      }
+    } catch (err) {
+      console.error('Error loading backups:', err);
+      setError('Failed to connect to the server');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleDeleteBackup = (id: string) => {
-    setBackups(prev => prev.filter(b => b.id !== id));
+  const handleDownload = async () => {
+    try {
+      setIsDownloading(true);
+      const res = await fetch('/api/admin/backups?export=1', { headers: authHeaders() });
+      if (!res.ok) throw new Error('Export failed');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `iskcon-backup-${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Backup download failed:', err);
+      alert('Backup download failed. Please try again.');
+    } finally {
+      setIsDownloading(false);
+    }
   };
 
-  if (isLoading) {
+  if (isLoading || !isAuthenticated) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#F8F9FC]">
         <div className="w-16 h-16 border-t-4 border-[#FF6B00] border-solid rounded-full animate-spin"></div>
@@ -73,102 +87,60 @@ export default function BackupsAdminPage() {
   return (
     <div className="min-h-screen bg-[#F8F9FC] p-6 lg:p-10 font-sans">
       <div className="max-w-[1600px] mx-auto">
-        
-        {/* Header */}
+
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 mb-10">
           <div>
             <h1 className="text-4xl font-black tracking-tight text-gray-900 mb-2">
               Database <span className="text-[#FF6B00]">Backups</span>
             </h1>
             <p className="text-gray-500 font-medium">
-              Create, download, or restore database system backups. Scheduled automated backups run daily at 2:00 AM.
+              Live collection statistics and full JSON export of website content.
+              {generatedAt && <span className="text-gray-400"> — scanned {generatedAt}</span>}
             </p>
           </div>
-          
-          <button
-            onClick={handleCreateBackup}
-            disabled={isBackupRunning}
-            className="px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white rounded-2xl font-bold flex items-center gap-3 shadow-lg shadow-orange-500/20 active:scale-95 transition-all disabled:opacity-50"
-          >
-            {isBackupRunning ? <FaSpinner className="animate-spin" /> : <FaDatabase />}
-            {isBackupRunning ? 'Creating Backup...' : 'Create Backup Now'}
-          </button>
-        </div>
-
-        {/* Status Box */}
-        <div className="bg-emerald-50/50 border border-emerald-100/50 rounded-3xl p-6 mb-8 flex items-center gap-4 text-emerald-800">
-          <FaCheckCircle className="text-emerald-500 shrink-0" size={24} />
-          <div>
-            <h4 className="font-bold text-sm">Backup Scheduler Active</h4>
-            <p className="text-xs text-emerald-600/90 font-medium mt-0.5">
-              Daily incremental database dumps are active. Current retention: 10 days. Status: Healthy.
-            </p>
+          <div className="flex gap-3">
+            <button onClick={loadStats} className="px-5 py-3 bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 rounded-2xl font-bold flex items-center gap-2 active:scale-95 transition-all">
+              <FaRedo size={13} /> Refresh
+            </button>
+            <button
+              onClick={handleDownload}
+              disabled={isDownloading}
+              className="px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 disabled:opacity-60 text-white rounded-2xl font-bold flex items-center gap-3 shadow-lg shadow-orange-500/20 active:scale-95 transition-all"
+            >
+              <FaDownload /> {isDownloading ? 'Preparing...' : 'Download Full Backup'}
+            </button>
           </div>
         </div>
 
-        {/* Backup Table */}
-        <div className="bg-white rounded-3xl p-6 shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-gray-100 overflow-hidden">
+        {error && (
+          <div className="mb-8 bg-amber-50 border border-amber-200 text-amber-800 rounded-2xl p-4 text-sm font-semibold">{error}</div>
+        )}
+
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="bg-white rounded-3xl p-6 shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-gray-100 overflow-hidden">
           <h3 className="text-xl font-bold text-gray-900 mb-6 tracking-tight flex items-center gap-2">
-            <FaClock className="text-orange-500" /> Recent Backups
+            <FaTable className="text-orange-500" /> Collections ({collections.length})
           </h3>
-          
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-gray-100 text-xs font-bold text-gray-400 uppercase tracking-wider">
-                  <th className="pb-3 pr-4">Backup Filename</th>
-                  <th className="pb-3 px-4">Size</th>
-                  <th className="pb-3 px-4">Created At</th>
-                  <th className="pb-3 px-4">Type</th>
-                  <th className="pb-3 pl-4 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {backups.map(backup => (
-                  <tr key={backup.id} className="group">
-                    <td className="py-4 pr-4 text-sm font-semibold text-gray-800 font-mono">
-                      {backup.filename}
-                    </td>
-                    <td className="py-4 px-4 text-sm font-bold text-gray-900">{backup.size}</td>
-                    <td className="py-4 px-4 text-sm font-medium text-gray-500">{backup.createdAt}</td>
-                    <td className="py-4 px-4 text-sm font-medium">
-                      <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
-                        backup.type === 'Manual' 
-                          ? 'bg-orange-50 text-orange-600 border border-orange-100'
-                          : 'bg-blue-50 text-blue-600 border border-blue-100'
-                      }`}>
-                        {backup.type}
-                      </span>
-                    </td>
-                    <td className="py-4 pl-4 text-sm text-right space-x-2">
-                      <button 
-                        className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg transition-colors inline-flex"
-                        title="Restore Backup"
-                        onClick={() => alert(`Restoring ${backup.filename}...`)}
-                      >
-                        <FaUndo size={14} />
-                      </button>
-                      <button 
-                        className="p-2 text-emerald-500 hover:bg-emerald-50 rounded-lg transition-colors inline-flex"
-                        title="Download Backup"
-                        onClick={() => alert(`Downloading ${backup.filename}...`)}
-                      >
-                        <FaDownload size={14} />
-                      </button>
-                      <button 
-                        className="p-2 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors inline-flex"
-                        title="Delete Backup"
-                        onClick={() => handleDeleteBackup(backup.id)}
-                      >
-                        <FaTrash size={14} />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+
+          {collections.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+              {collections.map(c => (
+                <div key={c.name} className="border border-gray-100 rounded-2xl p-4 flex justify-between items-center hover:border-orange-200 transition-colors">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <FaDatabase className="text-orange-400 flex-shrink-0" size={14} />
+                    <code className="text-sm font-bold text-gray-800 truncate">{c.name}</code>
+                  </div>
+                  <span className="text-sm font-black text-orange-600 flex-shrink-0 ml-2">{c.count.toLocaleString('en-IN')}</span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12 text-gray-500 font-medium">No collections found or database unreachable.</div>
+          )}
+        </motion.div>
+
+        <p className="mt-4 text-xs text-gray-400 leading-relaxed max-w-3xl">
+          Note: user accounts and authentication tokens are excluded from exports for security. The download contains every other collection as JSON, suitable for re-import via mongoimport or custom scripts.
+        </p>
 
       </div>
     </div>

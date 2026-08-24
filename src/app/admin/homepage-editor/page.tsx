@@ -9,6 +9,7 @@ export default function HomepageEditor() {
   const router = useRouter();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
 
   const [homepageData, setHomepageData] = useState({
@@ -33,21 +34,66 @@ export default function HomepageEditor() {
     checkAuth();
   }, [router]);
 
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    const load = async () => {
+      try {
+        const res = await fetch('/api/settings', { cache: 'no-store' });
+        const result = await res.json();
+        if (res.ok && result.data) {
+          setHomepageData(prev => ({
+            ...prev,
+            heroTitle: result.data.heroTitle || prev.heroTitle,
+            heroSubtitle: result.data.heroSubtitle || prev.heroSubtitle,
+            heroCtaText: result.data.heroCtaText || prev.heroCtaText,
+            heroCtaLink: result.data.heroCtaLink || prev.heroCtaLink,
+            missionTitle: result.data.missionTitle || prev.missionTitle,
+            missionText: result.data.missionText || prev.missionText,
+            welcomeMessage: result.data.welcomeMessage || prev.welcomeMessage
+          }));
+        }
+      } catch (err) {
+        console.error('Error loading homepage settings:', err);
+        setMessage({ type: 'error', text: 'Could not load current settings. Showing defaults.' });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    load();
+  }, [isAuthenticated]);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setHomepageData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
     setMessage(null);
 
-    setTimeout(() => {
+    try {
+      const token = localStorage.getItem('iskcon_admin_token');
+      const res = await fetch('/api/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: JSON.stringify(homepageData)
+      });
+      const result = await res.json();
+      if (res.ok) {
+        setMessage({ type: 'success', text: 'Homepage content updated successfully! The public site now shows your changes.' });
+        setTimeout(() => setMessage(null), 4000);
+      } else if (res.status === 401) {
+        router.push('/admin/login');
+      } else {
+        setMessage({ type: 'error', text: result.message || result.error || 'Failed to save changes' });
+      }
+    } catch (err) {
+      console.error('Error saving homepage settings:', err);
+      setMessage({ type: 'error', text: 'Failed to connect to the server' });
+    } finally {
       setIsSaving(false);
-      setMessage({ type: 'success', text: 'Homepage settings updated successfully (local simulation)!' });
-      setTimeout(() => setMessage(null), 4000);
-    }, 1200);
+    }
   };
 
   return (

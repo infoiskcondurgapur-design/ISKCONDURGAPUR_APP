@@ -1,157 +1,165 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { FaArrowLeft, FaNewspaper, FaPlus, FaTrash, FaEdit, FaSearch, FaInfoCircle } from 'react-icons/fa';
+import { motion } from 'framer-motion';
+import { FaPlus, FaTrash, FaNewspaper, FaRedo } from 'react-icons/fa';
 
-export default function NewsManagement() {
+interface NewsItem {
+  _id: string;
+  title: string;
+  content: string;
+  author?: string;
+  category?: string;
+  status: 'Draft' | 'Published';
+  date: string;
+}
+
+const EMPTY_FORM = { title: '', content: '', category: 'Announcements', status: 'Published' as 'Draft' | 'Published', date: new Date().toISOString().slice(0, 10) };
+
+export default function NewsAdminPage() {
   const router = useRouter();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+  const [items, setItems] = useState<NewsItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [form, setForm] = useState({ ...EMPTY_FORM });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const [news, setNews] = useState([
-    { id: 1, title: 'Annual Ratha Yatra Festival Dates Announced', date: '2026-06-05', author: 'Temple Admin', category: 'Festivals', status: 'Published' },
-    { id: 2, title: 'Sunday Feast: Free Prasadam Distribution Reaches 2,000 Devotees', date: '2026-06-01', author: 'Food Distribution Committee', category: 'Prasadam', status: 'Published' },
-    { id: 3, title: 'Vedic Cultural Centre Construction Progress Update', date: '2026-05-28', author: 'Building Committee', category: 'Announcements', status: 'Draft' }
-  ]);
-
-  useEffect(() => {
-    const checkAuth = () => {
-      const authToken = localStorage.getItem('iskcon_admin_token');
-      if (!authToken) {
-        router.push('/admin/login');
-        return;
-      }
-      setIsAuthenticated(true);
-    };
-    checkAuth();
-  }, [router]);
-
-  const handleDelete = (id: number) => {
-    setNews(prev => prev.filter(post => post.id !== id));
-    setMessage({ type: 'success', text: 'News article deleted successfully!' });
-    setTimeout(() => setMessage(null), 3000);
+  const authHeaders = (): Record<string, string> => {
+    const token = localStorage.getItem('iskcon_admin_token');
+    return token ? { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' };
   };
 
-  const filteredNews = news.filter(post =>
-    post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    post.category.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  useEffect(() => {
+    if (!localStorage.getItem('iskcon_admin_token')) {
+      router.push('/admin/login');
+      return;
+    }
+    setIsAuthenticated(true);
+    loadNews();
+  }, [router]);
+
+  const loadNews = useCallback(async () => {
+    try {
+      setError(null);
+      const res = await fetch('/api/news', { headers: authHeaders() });
+      const result = await res.json();
+      if (res.ok && result.data) setItems(result.data);
+      else setError(result.message || result.error || 'Failed to load news');
+    } catch (err) {
+      console.error('Error loading news:', err);
+      setError('Failed to connect to the server');
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.title.trim() || !form.content.trim()) return;
+    try {
+      setIsSubmitting(true);
+      const res = await fetch('/api/news', { method: 'POST', headers: authHeaders(), body: JSON.stringify(form) });
+      const result = await res.json();
+      if (res.ok) {
+        setForm({ ...EMPTY_FORM });
+        loadNews();
+      } else if (res.status === 401) router.push('/admin/login');
+      else alert(result.message || result.error || 'Failed to create news item');
+    } catch (err) {
+      console.error('Error creating news:', err);
+      alert('Failed to create news item');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDelete = async (id: string, title: string) => {
+    if (!confirm(`Delete "${title}"?`)) return;
+    try {
+      const res = await fetch(`/api/news/${id}`, { method: 'DELETE', headers: authHeaders() });
+      if (res.ok || res.status === 200) setItems(prev => prev.filter(i => i._id !== id));
+      else alert('Failed to delete news item');
+    } catch (err) {
+      console.error('Error deleting news:', err);
+      alert('Failed to delete news item');
+    }
+  };
+
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#F8F9FC]">
+        <div className="w-16 h-16 border-t-4 border-[#FF6B00] border-solid rounded-full animate-spin"></div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6 md:p-12">
-      <div className="max-w-6xl mx-auto">
-        <div className="mb-6">
-          <Link href="/admin" className="inline-flex items-center gap-2 text-gray-500 hover:text-iskcon-orange transition-colors font-medium">
-            <FaArrowLeft /> Back to Dashboard
-          </Link>
-        </div>
+    <div className="min-h-screen bg-[#F8F9FC] p-6 lg:p-10 font-sans">
+      <div className="max-w-[1600px] mx-auto">
 
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 mb-10">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">News Feed Management</h1>
-            <p className="text-gray-500 mt-1">Publish and manage news updates and stories displayed on the website.</p>
+            <h1 className="text-4xl font-black tracking-tight text-gray-900 mb-2">
+              Temple <span className="text-[#FF6B00]">News</span>
+            </h1>
+            <p className="text-gray-500 font-medium">Publish announcements and updates shown on the public website.</p>
           </div>
-          <button
-            onClick={() => alert('New post layout - Local Simulation')}
-            className="bg-[#FF6B00] text-white px-6 py-3 rounded-xl font-bold hover:bg-orange-700 transition flex items-center gap-2 self-start md:self-center"
-          >
-            <FaPlus /> Write News Post
+          <button onClick={loadNews} className="px-5 py-3 bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 rounded-2xl font-bold flex items-center gap-2 active:scale-95 transition-all">
+            <FaRedo size={13} /> Refresh
           </button>
         </div>
 
-        {message && (
-          <div className={`p-4 rounded-xl mb-8 flex items-start gap-3 border ${
-            message.type === 'success' 
-              ? 'bg-green-50 text-green-700 border-green-200' 
-              : 'bg-red-50 text-red-700 border-red-200'
-          }`}>
-            <FaInfoCircle className="mt-0.5 text-lg flex-shrink-0" />
-            <span className="font-medium">{message.text}</span>
-          </div>
-        )}
+        {error && <div className="mb-8 bg-amber-50 border border-amber-200 text-amber-800 rounded-2xl p-4 text-sm font-semibold">{error}</div>}
 
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-          {/* Toolbar */}
-          <div className="p-6 border-b border-gray-50 bg-gray-50/50 flex flex-col sm:flex-row justify-between items-center gap-4">
-            <div className="relative w-full sm:w-80">
-              <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search news by title..."
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-iskcon-orange/20 focus:border-iskcon-orange bg-white transition-all text-sm font-medium"
-              />
-            </div>
-            <div className="text-sm font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
-              <FaNewspaper /> {filteredNews.length} Articles Found
-            </div>
-          </div>
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
 
-          {/* Table */}
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-gray-50 text-[11px] font-bold text-gray-400 uppercase tracking-wider bg-gray-50/30">
-                  <th className="py-4 px-6">News Title</th>
-                  <th className="py-4 px-6">Publish Date</th>
-                  <th className="py-4 px-6">Author</th>
-                  <th className="py-4 px-6">Category</th>
-                  <th className="py-4 px-6">Status</th>
-                  <th className="py-4 px-6 text-center">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredNews.map(post => (
-                  <tr key={post.id} className="border-b border-gray-50 hover:bg-gray-50/30 transition-colors">
-                    <td className="py-4 px-6 font-bold text-gray-800 text-[15px]">{post.title}</td>
-                    <td className="py-4 px-6 font-semibold text-gray-500 text-sm">{post.date}</td>
-                    <td className="py-4 px-6 font-semibold text-gray-500 text-sm">{post.author}</td>
-                    <td className="py-4 px-6">
-                      <span className="text-xs font-bold px-3 py-1.5 rounded-full bg-orange-50 text-iskcon-orange">
-                        {post.category}
-                      </span>
-                    </td>
-                    <td className="py-4 px-6">
-                      <span className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-md ${
-                        post.status === 'Published' 
-                          ? 'bg-green-50 text-green-700 border border-green-200' 
-                          : 'bg-gray-100 text-gray-600 border border-gray-200'
-                      }`}>
-                        {post.status}
-                      </span>
-                    </td>
-                    <td className="py-4 px-6">
-                      <div className="flex items-center justify-center gap-2">
-                        <button
-                          onClick={() => alert(`Edit simulated for: ${post.title}`)}
-                          className="p-2 text-gray-400 hover:text-[#FF6B00] hover:bg-orange-50 rounded-xl transition"
-                          title="Edit News"
-                        >
-                          <FaEdit size={14} />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(post.id)}
-                          className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition"
-                          title="Delete News"
-                        >
-                          <FaTrash size={14} />
-                        </button>
+          <motion.form initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} onSubmit={handleCreate} className="xl:col-span-1 bg-white rounded-3xl p-6 shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-gray-100 h-fit space-y-4">
+            <h3 className="text-xl font-bold text-gray-900 tracking-tight flex items-center gap-2"><FaPlus className="text-orange-500" size={16} /> Add News Item</h3>
+            <input required value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="Headline *" className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-orange-400 focus:ring-2 focus:ring-orange-100 outline-none text-sm font-medium" />
+            <textarea required rows={5} value={form.content} onChange={e => setForm(f => ({ ...f, content: e.target.value }))} placeholder="Full story / announcement * " className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-orange-400 focus:ring-2 focus:ring-orange-100 outline-none text-sm font-medium resize-y" />
+            <div className="grid grid-cols-2 gap-3">
+              <input value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))} placeholder="Category" className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-orange-400 outline-none text-sm font-medium" />
+              <select value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value as 'Draft' | 'Published' }))} className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-orange-400 outline-none text-sm font-medium bg-white">
+                <option value="Published">Published</option>
+                <option value="Draft">Draft</option>
+              </select>
+            </div>
+            <input type="date" required value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))} className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-orange-400 outline-none text-sm font-medium" />
+            <button type="submit" disabled={isSubmitting} className="w-full py-3.5 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 disabled:opacity-60 text-white rounded-xl font-bold shadow-lg shadow-orange-500/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2">
+              <FaPlus size={13} /> {isSubmitting ? 'Publishing...' : 'Publish News'}
+            </button>
+          </motion.form>
+
+          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }} className="xl:col-span-2 bg-white rounded-3xl p-6 shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-gray-100 overflow-hidden">
+            <h3 className="text-xl font-bold text-gray-900 mb-6 tracking-tight flex items-center gap-2"><FaNewspaper className="text-orange-500" /> All News ({items.length})</h3>
+            {items.length > 0 ? (
+              <ul className="space-y-3 max-h-[70vh] overflow-y-auto pr-1">
+                {items.map(item => (
+                  <li key={item._id} className="border border-gray-100 rounded-2xl p-4 hover:border-orange-200 transition-colors group">
+                    <div className="flex justify-between items-start gap-4">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap mb-1">
+                          <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${item.status === 'Published' ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-gray-600'}`}>{item.status}</span>
+                          {item.category && <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-orange-50 text-orange-700">{item.category}</span>}
+                          <span className="text-xs text-gray-400 font-medium">{new Date(item.date).toLocaleDateString('en-IN')}</span>
+                        </div>
+                        <h4 className="font-bold text-gray-900 truncate">{item.title}</h4>
+                        <p className="text-sm text-gray-500 line-clamp-2 mt-0.5">{item.content}</p>
                       </div>
-                    </td>
-                  </tr>
+                      <button onClick={() => handleDelete(item._id, item.title)} aria-label={`Delete ${item.title}`} className="p-2.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-xl opacity-60 group-hover:opacity-100 transition-all flex-shrink-0">
+                        <FaTrash size={14} />
+                      </button>
+                    </div>
+                  </li>
                 ))}
-                {filteredNews.length === 0 && (
-                  <tr>
-                    <td colSpan={6} className="py-12 text-center text-gray-400 font-medium">No news articles found.</td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+              </ul>
+            ) : (
+              <div className="text-center py-12 text-gray-500 font-medium">No news yet — publish your first item using the form.</div>
+            )}
+          </motion.div>
+
         </div>
       </div>
     </div>

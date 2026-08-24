@@ -1,152 +1,165 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { FaArrowLeft, FaCalendarAlt, FaPlus, FaTrash, FaEdit, FaSearch, FaInfoCircle } from 'react-icons/fa';
+import { motion } from 'framer-motion';
+import { FaPlus, FaTrash, FaCalendarAlt, FaRedo } from 'react-icons/fa';
 
-export default function FestivalsAnnouncements() {
+interface FestivalItem {
+  _id: string;
+  name: string;
+  date: string;
+  timing: string;
+  status: 'Active' | 'Upcoming' | 'Inactive';
+}
+
+const EMPTY_FORM = { name: '', date: '', timing: '', status: 'Upcoming' as FestivalItem['status'] };
+
+export default function FestivalsAdminPage() {
   const router = useRouter();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+  const [items, setItems] = useState<FestivalItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [form, setForm] = useState({ ...EMPTY_FORM });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const [festivals, setFestivals] = useState([
-    { id: 1, name: 'Sri Krishna Janmashtami', date: '2026-09-04', timing: '04:30 AM - 12:00 AM', status: 'Active' },
-    { id: 2, name: 'Sri Radhashtami Celebrations', date: '2026-09-18', timing: '06:00 AM - 09:00 PM', status: 'Upcoming' },
-    { id: 3, name: 'Gaura Purnima Festival', date: '2027-03-03', timing: '05:00 AM - 10:00 PM', status: 'Inactive' }
-  ]);
-
-  useEffect(() => {
-    const checkAuth = () => {
-      const authToken = localStorage.getItem('iskcon_admin_token');
-      if (!authToken) {
-        router.push('/admin/login');
-        return;
-      }
-      setIsAuthenticated(true);
-    };
-    checkAuth();
-  }, [router]);
-
-  const handleDelete = (id: number) => {
-    setFestivals(prev => prev.filter(f => f.id !== id));
-    setMessage({ type: 'success', text: 'Festival announcement deleted successfully!' });
-    setTimeout(() => setMessage(null), 3000);
+  const authHeaders = (): Record<string, string> => {
+    const token = localStorage.getItem('iskcon_admin_token');
+    return token ? { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' };
   };
 
-  const filteredFestivals = festivals.filter(f =>
-    f.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  useEffect(() => {
+    if (!localStorage.getItem('iskcon_admin_token')) {
+      router.push('/admin/login');
+      return;
+    }
+    setIsAuthenticated(true);
+    loadFestivals();
+  }, [router]);
+
+  const loadFestivals = useCallback(async () => {
+    try {
+      setError(null);
+      const res = await fetch('/api/festivals', { headers: authHeaders() });
+      const result = await res.json();
+      if (res.ok && result.data) setItems(Array.isArray(result.data) ? result.data : result.data.festivals || []);
+      else setError(result.message || result.error || 'Failed to load festivals');
+    } catch (err) {
+      console.error('Error loading festivals:', err);
+      setError('Failed to connect to the server');
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.name.trim() || !form.date || !form.timing.trim()) return;
+    try {
+      setIsSubmitting(true);
+      const res = await fetch('/api/festivals', { method: 'POST', headers: authHeaders(), body: JSON.stringify(form) });
+      const result = await res.json();
+      if (res.ok || res.status === 201) {
+        setForm({ ...EMPTY_FORM });
+        loadFestivals();
+      } else if (res.status === 401) router.push('/admin/login');
+      else alert(result.message || result.error || 'Failed to add festival');
+    } catch (err) {
+      console.error('Error adding festival:', err);
+      alert('Failed to add festival');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDelete = async (id: string, name: string) => {
+    if (!confirm(`Delete "${name}"?`)) return;
+    try {
+      const res = await fetch(`/api/festivals/${id}`, { method: 'DELETE', headers: authHeaders() });
+      if (res.ok) setItems(prev => prev.filter(i => i._id !== id));
+      else alert('Failed to delete festival');
+    } catch (err) {
+      console.error('Error deleting festival:', err);
+      alert('Failed to delete festival');
+    }
+  };
+
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#F8F9FC]">
+        <div className="w-16 h-16 border-t-4 border-[#FF6B00] border-solid rounded-full animate-spin"></div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6 md:p-12">
-      <div className="max-w-6xl mx-auto">
-        <div className="mb-6">
-          <Link href="/admin" className="inline-flex items-center gap-2 text-gray-500 hover:text-iskcon-orange transition-colors font-medium">
-            <FaArrowLeft /> Back to Dashboard
-          </Link>
-        </div>
+    <div className="min-h-screen bg-[#F8F9FC] p-6 lg:p-10 font-sans">
+      <div className="max-w-[1600px] mx-auto">
 
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 mb-10">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Festival Announcements</h1>
-            <p className="text-gray-500 mt-1">Announce major festivals, timings, and schedules for temple programs.</p>
+            <h1 className="text-4xl font-black tracking-tight text-gray-900 mb-2">
+              Festival <span className="text-[#FF6B00]">Calendar</span>
+            </h1>
+            <p className="text-gray-500 font-medium">Manage upcoming temple festivals and their schedules.</p>
           </div>
-          <button
-            onClick={() => alert('New festival layout - Local Simulation')}
-            className="bg-[#FF6B00] text-white px-6 py-3 rounded-xl font-bold hover:bg-orange-700 transition flex items-center gap-2 self-start md:self-center"
-          >
-            <FaPlus /> Create Festival Announcement
+          <button onClick={loadFestivals} className="px-5 py-3 bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 rounded-2xl font-bold flex items-center gap-2 active:scale-95 transition-all">
+            <FaRedo size={13} /> Refresh
           </button>
         </div>
 
-        {message && (
-          <div className={`p-4 rounded-xl mb-8 flex items-start gap-3 border ${
-            message.type === 'success' 
-              ? 'bg-green-50 text-green-700 border-green-200' 
-              : 'bg-red-50 text-red-700 border-red-200'
-          }`}>
-            <FaInfoCircle className="mt-0.5 text-lg flex-shrink-0" />
-            <span className="font-medium">{message.text}</span>
-          </div>
-        )}
+        {error && <div className="mb-8 bg-amber-50 border border-amber-200 text-amber-800 rounded-2xl p-4 text-sm font-semibold">{error}</div>}
 
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-          {/* Toolbar */}
-          <div className="p-6 border-b border-gray-50 bg-gray-50/50 flex flex-col sm:flex-row justify-between items-center gap-4">
-            <div className="relative w-full sm:w-80">
-              <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search festivals by name..."
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-iskcon-orange/20 focus:border-iskcon-orange bg-white transition-all text-sm font-medium"
-              />
-            </div>
-            <div className="text-sm font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
-              <FaCalendarAlt /> {filteredFestivals.length} Festivals Programmed
-            </div>
-          </div>
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
 
-          {/* Table */}
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-gray-50 text-[11px] font-bold text-gray-400 uppercase tracking-wider bg-gray-50/30">
-                  <th className="py-4 px-6">Festival Name</th>
-                  <th className="py-4 px-6">Date</th>
-                  <th className="py-4 px-6">Darshan/Program Timings</th>
-                  <th className="py-4 px-6">Status</th>
-                  <th className="py-4 px-6 text-center">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredFestivals.map(festival => (
-                  <tr key={festival.id} className="border-b border-gray-50 hover:bg-gray-50/30 transition-colors">
-                    <td className="py-4 px-6 font-bold text-gray-800 text-[15px]">{festival.name}</td>
-                    <td className="py-4 px-6 font-semibold text-gray-500 text-sm">{festival.date}</td>
-                    <td className="py-4 px-6 font-semibold text-gray-500 text-sm">{festival.timing}</td>
-                    <td className="py-4 px-6">
-                      <span className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-md ${
-                        festival.status === 'Active' 
-                          ? 'bg-orange-500 text-white' 
-                          : festival.status === 'Upcoming'
-                            ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                            : 'bg-gray-100 text-gray-600 border border-gray-200'
-                      }`}>
-                        {festival.status}
-                      </span>
-                    </td>
-                    <td className="py-4 px-6">
-                      <div className="flex items-center justify-center gap-2">
-                        <button
-                          onClick={() => alert(`Edit simulated for: ${festival.name}`)}
-                          className="p-2 text-gray-400 hover:text-[#FF6B00] hover:bg-orange-50 rounded-xl transition"
-                          title="Edit Announcement"
-                        >
-                          <FaEdit size={14} />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(festival.id)}
-                          className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition"
-                          title="Delete Announcement"
-                        >
-                          <FaTrash size={14} />
-                        </button>
+          <motion.form initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} onSubmit={handleCreate} className="xl:col-span-1 bg-white rounded-3xl p-6 shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-gray-100 h-fit space-y-4">
+            <h3 className="text-xl font-bold text-gray-900 tracking-tight flex items-center gap-2"><FaPlus className="text-orange-500" size={16} /> Add Festival</h3>
+            <input required value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Festival name *" className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-orange-400 focus:ring-2 focus:ring-orange-100 outline-none text-sm font-medium" />
+            <input type="date" required value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))} className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-orange-400 outline-none text-sm font-medium" />
+            <input required value={form.timing} onChange={e => setForm(f => ({ ...f, timing: e.target.value }))} placeholder="Timing (e.g. 6:00 PM onwards) *" className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-orange-400 outline-none text-sm font-medium" />
+            <select value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value as FestivalItem['status'] }))} className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-orange-400 outline-none text-sm font-medium bg-white">
+              <option value="Upcoming">Upcoming</option>
+              <option value="Active">Active</option>
+              <option value="Inactive">Inactive</option>
+            </select>
+            <button type="submit" disabled={isSubmitting} className="w-full py-3.5 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 disabled:opacity-60 text-white rounded-xl font-bold shadow-lg shadow-orange-500/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2">
+              <FaPlus size={13} /> {isSubmitting ? 'Adding...' : 'Add Festival'}
+            </button>
+          </motion.form>
+
+          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }} className="xl:col-span-2 bg-white rounded-3xl p-6 shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-gray-100 overflow-hidden">
+            <h3 className="text-xl font-bold text-gray-900 mb-6 tracking-tight flex items-center gap-2"><FaCalendarAlt className="text-orange-500" /> All Festivals ({items.length})</h3>
+            {items.length > 0 ? (
+              <ul className="space-y-3 max-h-[70vh] overflow-y-auto pr-1">
+                {[...items]
+                  .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+                  .map(item => (
+                  <li key={item._id} className="border border-gray-100 rounded-2xl p-4 hover:border-orange-200 transition-colors group flex justify-between items-center gap-4">
+                    <div className="flex items-center gap-4 min-w-0">
+                      <div className="bg-orange-50 text-orange-700 rounded-xl px-3 py-2 text-center flex-shrink-0 w-16">
+                        <div className="text-lg font-black leading-none">{new Date(item.date).getDate()}</div>
+                        <div className="text-[10px] font-bold uppercase tracking-wider mt-0.5">{new Date(item.date).toLocaleDateString('en-IN', { month: 'short' })}</div>
                       </div>
-                    </td>
-                  </tr>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h4 className="font-bold text-gray-900 truncate">{item.name}</h4>
+                          <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${item.status === 'Active' ? 'bg-emerald-50 text-emerald-700' : item.status === 'Upcoming' ? 'bg-blue-50 text-blue-700' : 'bg-gray-100 text-gray-600'}`}>{item.status}</span>
+                        </div>
+                        <p className="text-sm text-gray-500 font-medium mt-0.5">{item.timing}</p>
+                      </div>
+                    </div>
+                    <button onClick={() => handleDelete(item._id, item.name)} aria-label={`Delete ${item.name}`} className="p-2.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-xl opacity-60 group-hover:opacity-100 transition-all flex-shrink-0">
+                      <FaTrash size={14} />
+                    </button>
+                  </li>
                 ))}
-                {filteredFestivals.length === 0 && (
-                  <tr>
-                    <td colSpan={5} className="py-12 text-center text-gray-400 font-medium">No festival announcements found.</td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+              </ul>
+            ) : (
+              <div className="text-center py-12 text-gray-500 font-medium">No festivals yet — add your first one.</div>
+            )}
+          </motion.div>
+
         </div>
       </div>
     </div>
