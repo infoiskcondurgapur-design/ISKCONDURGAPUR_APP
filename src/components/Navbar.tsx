@@ -112,6 +112,7 @@ const navigation = [
       { name: 'Our Mission', href: '/about/mission' },
       { name: 'ISKCON History', href: '/about/history' },
       { name: 'Temple Info', href: '/about/temple' },
+      { name: 'Temple Projects', href: '/about/projects' },
       { name: 'Contact Us', href: '/about/contact' },
     ]
   },
@@ -122,6 +123,7 @@ const navigation = [
     submenu: [
       { name: 'Biography', href: '/prabhupada/biography' },
       { name: 'Books', href: '/resources/books' },
+      { name: 'Letters', href: '/prabhupada/letters' },
       { name: 'Quotes', href: '/resources/prabhupada-quotes' },
       { name: 'Gallery', href: '/prabhupada/gallery' }
     ]
@@ -144,7 +146,8 @@ const navigation = [
       { name: 'Audio & Podcasts', href: '/resources/audio' },
       { name: 'Vaishnava Bhajans', href: '/resources/bhajans' },
       { name: 'Videos', href: '/resources/videos' },
-      { name: 'Photo Gallery', href: '/resources/gallery' }
+      { name: 'Photo Gallery', href: '/resources/gallery' },
+      { name: 'Vedic Blog', href: '/blog' }
     ]
   },
   {
@@ -158,7 +161,8 @@ const navigation = [
       { name: 'Events', href: '/events' }
     ]
   },
-  { name: 'Store', href: '/store', icon: <FaShoppingCart className="mr-2" /> }
+    { name: 'Store', href: '/store', icon: <FaShoppingCart className="mr-2" /> },
+    { name: 'Daily Updates', href: '/daily-updates', icon: <FaBell className="mr-2" /> }
 ];
 
 export default function Navbar() {
