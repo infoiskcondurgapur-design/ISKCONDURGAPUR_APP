@@ -1,65 +1,94 @@
 'use client';
 
-import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { FaBook, FaBookOpen, FaPrayingHands, FaUserFriends, FaGlobe, FaVrCardboard } from 'react-icons/fa';
 
-// Featured books data
-const featuredBooks = [
+interface BookEntry {
+  id: string;
+  title: string;
+  description: string;
+  cover: string;
+}
+
+// Canonical catalog — IDs match the reader's chapter maps (/resources/books/[id])
+const books: BookEntry[] = [
   {
-    id: 1,
-    title: "Bhagavad-gita As It Is",
-    description: "Experience the timeless wisdom of Bhagavad-gita with interactive study tools, audio narration, and virtual reality temple tours. Perfect for modern spiritual seekers.",
-    icon: <FaBook className="text-5xl text-iskcon-orange" />,
-    readLink: "/resources/books/bhagavad-gita",
-    features: ["Interactive Commentary", "Audio Narration", "Virtual Temple Tours"]
+    id: '65f1234567890abcdef12301',
+    title: 'Bhagavad-gītā As It Is',
+    description: 'The timeless conversation between Lord Kṛṣṇa and Arjuna — the essence of Vedic wisdom.',
+    cover: '/images/books/bhagavad_gita.jpg',
   },
   {
-    id: 2,
-    title: "Srimad-Bhagavatam",
-    description: "Dive deep into the ocean of spiritual knowledge with our enhanced digital edition featuring cross-references, study guides, and multimedia content.",
-    icon: <FaBookOpen className="text-5xl text-iskcon-orange" />,
-    readLink: "/resources/books/srimad-bhagavatam",
-    features: ["Digital Enhancement", "Study Guides", "Multimedia Integration"]
+    id: '65f1234567890abcdef12302',
+    title: 'Śrīmad-Bhāgavatam',
+    description: 'The ripened fruit of the tree of Vedic literature, narrating the pastimes of the Lord.',
+    cover: '/images/books/srimad_bhagavatam.jpg',
   },
   {
-    id: 3,
-    title: "Sri Caitanya-caritamrta",
-    description: "Follow the footsteps of Sri Caitanya Mahaprabhu through immersive storytelling, historical maps, and virtual pilgrimage experiences.",
-    icon: <FaVrCardboard className="text-5xl text-iskcon-orange" />,
-    readLink: "/resources/books/caitanya-caritamrta",
-    features: ["Virtual Pilgrimage", "Historical Maps", "Cultural Insights"]
+    id: '65f1234567890abcdef12303',
+    title: 'Śrī Caitanya-caritāmṛta',
+    description: 'The life and teachings of Śrī Caitanya Mahāprabhu, the golden avatar.',
+    cover: '/images/books/caitanya_caritamrta.jpg',
   },
   {
-    id: 4,
-    title: "Beyond Time and Space",
-    description: "Explore the convergence of Vedic wisdom and modern science in this groundbreaking new work.",
-    icon: <FaGlobe className="text-5xl text-iskcon-orange" />,
-    readLink: "/resources/books/beyond-time-space",
-    features: ["Scientific Research", "Quantum Physics", "Consciousness Studies"]
-  }
+    id: '65f1234567890abcdef12304',
+    title: 'Nectar of Instruction',
+    description: 'Eleven essential instructions from Śrīla Rūpa Gosvāmī, illuminated by Śrīla Prabhupāda.',
+    cover: '/images/books/nectar_of_instruction.jpg',
+  },
+  {
+    id: '65f1234567890abcdef12305',
+    title: 'Kṛṣṇa, the Supreme Personality of Godhead',
+    description: 'The beautiful pastimes of Lord Kṛṣṇa in Vṛndāvana, told by Śrīla Prabhupāda.',
+    cover: '/images/books/krsna_book.jpg',
+  },
+  {
+    id: '65f1234567890abcdef12306',
+    title: 'The Nectar of Devotion',
+    description: 'The complete science of bhakti-yoga, based on Śrīla Rūpa Gosvāmī’s Bhakti-rasāmṛta-sindhu.',
+    cover: '/images/books/nectar_of_devotion.jpg',
+  },
+  {
+    id: '65f1234567890abcdef12307',
+    title: 'Śrī Īśopaniṣad',
+    description: 'Eighteen mantras revealing the Lord’s ownership and control of everything.',
+    cover: '/images/books/sri_isopanisad.jpg',
+  },
+  {
+    id: '65f1234567890abcdef12308',
+    title: 'The Science of Self-Realization',
+    description: 'Practical guidance on yoga, meditation, and living in Kṛṣṇa consciousness.',
+    cover: '/images/books/science_of_self_realization.jpg',
+  },
+  {
+    id: '65f1234567890abcdef12309',
+    title: 'Beyond Birth and Death',
+    description: 'We are not these bodies — discover the soul’s journey beyond birth and death.',
+    cover: '/images/books/beyond_birth_death.jpg',
+  },
+  {
+    id: '65f1234567890abcdef12310',
+    title: 'Bhakti: The Art of Eternal Love',
+    description: 'Awakening our natural state of pure love of God through devotional service.',
+    cover: '/images/books/bhakti_art_of_eternal_love.jpg',
+  },
+  {
+    id: '65f1234567890abcdef12311',
+    title: 'Śrī Brahma-saṁhitā',
+    description: 'The hymns of Lord Brahma glorifying the Supreme Personality of Godhead.',
+    cover: '/images/books/sri_brahma_samhita.jpg',
+  },
+  {
+    id: '65f1234567890abcdef12312',
+    title: 'Civilization and Transcendence',
+    description: 'Simple living and high thinking — the spiritual solution to the modern malaise.',
+    cover: '/images/books/civilization_and_transcendence.jpg',
+  },
 ];
 
 export default function PrabhupadaBooksPage() {
   return (
     <div className="min-h-screen bg-gray-50 pt-20">
-      {/* Header Navigation */}
-      <div className="bg-white shadow-sm">
-        <div className="container mx-auto px-4 py-3 flex justify-between items-center">
-          <div className="flex items-center">
-            <FaBook className="text-iskcon-orange text-xl mr-2" />
-            <span className="text-xl font-bold text-iskcon-orange">Prabhupada Books</span>
-          </div>
-          <nav className="flex space-x-6">
-            <Link href="#" className="text-gray-700 hover:text-iskcon-orange">Home</Link>
-            <Link href="#" className="text-gray-700 hover:text-iskcon-orange">Library</Link>
-            <Link href="#" className="text-gray-700 hover:text-iskcon-orange">Reader</Link>
-            <Link href="#" className="text-gray-700 hover:text-iskcon-orange">Bookmarks</Link>
-          </nav>
-        </div>
-      </div>
-
       {/* Hero Section */}
       <section className="py-16 bg-white">
         <div className="container mx-auto px-4">
@@ -78,50 +107,34 @@ export default function PrabhupadaBooksPage() {
         </div>
       </section>
 
-      {/* Featured Books Section */}
+      {/* Books Grid */}
       <section className="py-16">
         <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-bold mb-12 text-gray-800">Featured Books</h2>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {featuredBooks.map((book) => (
-              <div
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
+            {books.map((book) => (
+              <Link
                 key={book.id}
-                className="bg-white rounded-md shadow-md overflow-hidden transition-transform hover:shadow-lg"
+                href={`/resources/books/${book.id}`}
+                className="group bg-white rounded-md shadow-md overflow-hidden transition-all hover:shadow-lg hover:-translate-y-1 flex flex-col"
               >
-                <div className="p-6 flex flex-col items-center">
-                  <div className="mb-4">
-                    {book.icon}
-                  </div>
-                  <h3 className="text-xl font-bold text-center mb-3">{book.title}</h3>
-                  <p className="text-gray-600 text-center mb-6">{book.description}</p>
-                  <Link
-                    href={book.readLink}
-                    className="bg-iskcon-orange text-white px-6 py-2 rounded-md hover:bg-iskcon-orange-dark transition-colors"
-                  >
-                    Start Reading
-                  </Link>
+                <div className="relative w-full aspect-[2/3] bg-[#eed5af]">
+                  <Image
+                    src={book.cover}
+                    alt={book.title}
+                    layout="fill"
+                    objectFit="cover"
+                    className="transition-transform duration-300 group-hover:scale-105"
+                  />
                 </div>
-              </div>
+                <div className="p-5 flex flex-col flex-grow">
+                  <h3 className="text-lg font-bold text-gray-900 mb-2 leading-snug">{book.title}</h3>
+                  <p className="text-sm text-gray-600 mb-4 flex-grow">{book.description}</p>
+                  <span className="inline-flex items-center text-iskcon-orange font-semibold text-sm group-hover:text-iskcon-orange-dark transition-colors">
+                    Read Now →
+                  </span>
+                </div>
+              </Link>
             ))}
-          </div>
-        </div>
-      </section>
-
-      {/* CTA Section */}
-      <section className="py-12 bg-gray-100">
-        <div className="container mx-auto px-4">
-          <div className="max-w-5xl mx-auto bg-white rounded-lg shadow-md p-8 flex flex-col md:flex-row items-center justify-between">
-            <div>
-              <h2 className="text-2xl font-bold mb-2">Explore More Books</h2>
-              <p className="text-gray-600">Discover the complete collection of Srila Prabhupada&apos;s literary works</p>
-            </div>
-            <Link
-              href="/resources/books"
-              className="mt-4 md:mt-0 bg-iskcon-orange text-white px-6 py-3 rounded-md hover:bg-iskcon-orange-dark transition-colors"
-            >
-              Browse All Books
-            </Link>
           </div>
         </div>
       </section>

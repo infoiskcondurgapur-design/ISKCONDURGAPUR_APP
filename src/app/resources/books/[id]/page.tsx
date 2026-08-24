@@ -167,6 +167,22 @@ const staticFallbackBooksList = [
   { _id: "65f1234567890abcdef12312", title: "Civilization and Transcendence" }
 ];
 
+// Offline metadata so canonical books always open, even if the DB is empty
+const staticBookMeta: Record<string, { title: string; description: string }> = {
+  "65f1234567890abcdef12301": { title: "Bhagavad-gītā As It Is", description: "The timeless conversation between Lord Kṛṣṇa and Arjuna — the essence of Vedic wisdom." },
+  "65f1234567890abcdef12302": { title: "Śrīmad-Bhāgavatam", description: "The ripened fruit of the tree of Vedic literature, narrating the pastimes of the Lord." },
+  "65f1234567890abcdef12303": { title: "Śrī Caitanya-caritāmṛta", description: "The life and teachings of Śrī Caitanya Mahāprabhu, the golden avatar." },
+  "65f1234567890abcdef12304": { title: "Nectar of Instruction", description: "Eleven essential instructions from Śrīla Rūpa Gosvāmī, illuminated by Śrīla Prabhupāda." },
+  "65f1234567890abcdef12305": { title: "Kṛṣṇa, the Supreme Personality of Godhead", description: "The beautiful pastimes of Lord Kṛṣṇa in Vṛndāvana, told by Śrīla Prabhupāda." },
+  "65f1234567890abcdef12306": { title: "The Nectar of Devotion", description: "The complete science of bhakti-yoga, based on Śrīla Rūpa Gosvāmī's Bhakti-rasāmṛta-sindhu." },
+  "65f1234567890abcdef12307": { title: "Śrī Īśopaniṣad", description: "Eighteen mantras revealing the Lord's ownership and control of everything." },
+  "65f1234567890abcdef12308": { title: "The Science of Self-Realization", description: "Practical guidance on yoga, meditation, and living in Kṛṣṇa consciousness." },
+  "65f1234567890abcdef12309": { title: "Beyond Birth and Death", description: "We are not these bodies — discover the soul's journey beyond birth and death." },
+  "65f1234567890abcdef12310": { title: "Bhakti: The Art of Eternal Love", description: "Awakening our natural state of pure love of God through devotional service." },
+  "65f1234567890abcdef12311": { title: "Śrī Brahma-saṁhitā", description: "The hymns of Lord Brahma glorifying the Supreme Personality of Godhead." },
+  "65f1234567890abcdef12312": { title: "Civilization and Transcendence", description: "Simple living and high thinking — the spiritual solution to the modern malaise." }
+};
+
 const getChaptersForSubLevel = (bookId: string, subLevel: string): string[] => {
   // Srimad-Bhagavatam
   if (bookId === "65f1234567890abcdef12302") {
@@ -372,7 +388,12 @@ export default function BookReaderPage({ params }: { params: { id: string } }) {
         if (response.ok && result.data) {
           setBook(result.data);
         } else {
-          setError(result.message || 'Book not found');
+          const meta = staticBookMeta[params.id];
+          if (meta) {
+            setBook({ type: 'Book', _id: params.id, ...meta });
+          } else {
+            setError(result.message || 'Book not found');
+          }
         }
 
         const listResponse = await fetch('/api/resources');
@@ -386,7 +407,12 @@ export default function BookReaderPage({ params }: { params: { id: string } }) {
         }
       } catch (err) {
         console.error('Error fetching book details:', err);
-        setError('Failed to load book details');
+        const meta = staticBookMeta[params.id];
+        if (meta) {
+          setBook({ type: 'Book', _id: params.id, ...meta });
+        } else {
+          setError('Failed to load book details');
+        }
       } finally {
         setLoading(false);
       }
