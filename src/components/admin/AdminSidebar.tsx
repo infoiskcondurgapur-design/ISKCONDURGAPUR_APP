@@ -8,7 +8,8 @@ import {
     FaCog, FaImage, FaSignOutAlt, FaBookOpen, FaBars, FaTimes,
     FaChartLine, FaDatabase, FaAd, FaBlog, FaBug, FaClipboardList,
     FaHeartbeat, FaEdit, FaNewspaper, FaQuoteRight, FaFolderOpen,
-    FaShieldAlt, FaVideo
+    FaShieldAlt, FaVideo, FaHandHoldingHeart, FaFileAlt,
+    FaEnvelopeOpen, FaGraduationCap
 } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -25,20 +26,26 @@ export default function AdminSidebar() {
     const navItems = [
         { name: 'Dashboard', path: '/admin', icon: <FaHome /> },
         { name: 'Temples', path: '/admin/temples', icon: <FaHome /> },
+        { name: 'Projects', path: '/admin/projects', icon: <FaHandHoldingHeart /> },
         { name: 'Events', path: '/admin/events', icon: <FaCalendarAlt /> },
         { name: 'Courses', path: '/admin/courses', icon: <FaBookOpen /> },
+        { name: 'Classroom', path: '/admin/classroom', icon: <FaGraduationCap /> },
         { name: 'Bhajans', path: '/admin/bhajans', icon: <FaMusic /> },
         { name: 'Tours', path: '/admin/tours', icon: <FaRoute /> },
         { name: 'Gallery', path: '/admin/gallery', icon: <FaImage /> },
         { name: 'Video Library', path: '/admin/video-library', icon: <FaVideo /> },
         { name: 'Resources', path: '/admin/resources', icon: <FaFolderOpen /> },
         { name: 'Quotes', path: '/admin/quotes', icon: <FaQuoteRight /> },
+        { name: 'Prabhupada Letters', path: '/admin/letters', icon: <FaEnvelopeOpen /> },
+        { name: 'Daily Updates', path: '/admin/daily-updates', icon: <FaNewspaper /> },
         { name: 'News', path: '/admin/news', icon: <FaNewspaper /> },
         { name: 'Blog', path: '/admin/blog', icon: <FaBlog /> },
+        { name: 'Custom Pages', path: '/admin/custom-pages', icon: <FaFileAlt /> },
         { name: 'Homepage Editor', path: '/admin/homepage-editor', icon: <FaEdit /> },
         { name: 'Banner Management', path: '/admin/banner-management', icon: <FaAd /> },
         { name: 'Users', path: '/admin/users', icon: <FaUsers /> },
         { name: 'Forms', path: '/admin/forms', icon: <FaClipboardList /> },
+        { name: 'Custom Forms', path: '/admin/custom-forms', icon: <FaEdit /> },
         { name: 'Settings', path: '/admin/settings', icon: <FaCog /> },
         { name: 'Analytics', path: '/admin/analytics', icon: <FaChartLine /> },
         { name: 'Security', path: '/admin/security', icon: <FaShieldAlt /> },

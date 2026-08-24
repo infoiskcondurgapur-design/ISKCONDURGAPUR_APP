@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { FaUsers, FaCalendarAlt, FaBookOpen, FaImage, FaHome, FaMusic, FaRoute, FaCog, FaShieldAlt, FaChartLine, FaDatabase, FaAd, FaBlog, FaBug, FaClipboardList, FaHeartbeat, FaEdit, FaNewspaper, FaQuoteRight, FaFolderOpen, FaVideo } from 'react-icons/fa';
+import { FaUsers, FaCalendarAlt, FaBookOpen, FaImage, FaHome, FaMusic, FaRoute, FaCog, FaShieldAlt, FaChartLine, FaDatabase, FaAd, FaBlog, FaBug, FaClipboardList, FaHeartbeat, FaEdit, FaNewspaper, FaQuoteRight, FaFolderOpen, FaVideo, FaHandHoldingHeart, FaFileAlt, FaEnvelopeOpen, FaGraduationCap } from 'react-icons/fa';
 import { motion } from 'framer-motion';
 
 export default function AdminDashboard() {
@@ -295,6 +295,54 @@ export default function AdminDashboard() {
             desc="Review contact forms, volunteer applications, and inquiries."
             colorClass="text-sky-600"
             bgHoverClass="hover:border-sky-500/30"
+          />
+          <AdminModuleCard 
+            href="/admin/projects"
+            icon={<FaHandHoldingHeart size={28} />}
+            title="Projects"
+            desc="Manage temple service projects, progress, and fundraising goals."
+            colorClass="text-rose-500"
+            bgHoverClass="hover:border-rose-500/30"
+          />
+          <AdminModuleCard 
+            href="/admin/classroom"
+            icon={<FaGraduationCap size={28} />}
+            title="Classroom"
+            desc="Create batches, assign tasks, and review student assessments."
+            colorClass="text-violet-500"
+            bgHoverClass="hover:border-violet-500/30"
+          />
+          <AdminModuleCard 
+            href="/admin/letters"
+            icon={<FaEnvelopeOpen size={28} />}
+            title="Prabhupada Letters"
+            desc="Browse and manage the archived letters of Srila Prabhupada."
+            colorClass="text-teal-600"
+            bgHoverClass="hover:border-teal-500/30"
+          />
+          <AdminModuleCard 
+            href="/admin/daily-updates"
+            icon={<FaNewspaper size={28} />}
+            title="Daily Updates"
+            desc="Post daily spiritual updates with images for the homepage."
+            colorClass="text-fuchsia-600"
+            bgHoverClass="hover:border-fuchsia-500/30"
+          />
+          <AdminModuleCard 
+            href="/admin/custom-pages"
+            icon={<FaFileAlt size={28} />}
+            title="Custom Pages"
+            desc="Build standalone pages with custom HTML content and slugs."
+            colorClass="text-slate-600"
+            bgHoverClass="hover:border-slate-500/30"
+          />
+          <AdminModuleCard 
+            href="/admin/custom-forms"
+            icon={<FaEdit size={28} />}
+            title="Custom Forms"
+            desc="Design custom forms with drag-and-drop fields and view submissions."
+            colorClass="text-orange-600"
+            bgHoverClass="hover:border-orange-500/30"
           />
           <AdminModuleCard 
             href="/admin/analytics"
