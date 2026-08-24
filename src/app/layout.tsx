@@ -1,9 +1,11 @@
 import type { Metadata } from 'next';
+import { Suspense } from 'react';
 import { Inter, Poppins, Tiro_Bangla } from 'next/font/google';
 import '@/styles/globals.css';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import NoticeBanner from '@/components/NoticeBanner';
+import AnalyticsTracker from '@/components/AnalyticsTracker';
 import { AuthProvider } from '@/context/auth/AuthContext';
 
 const inter = Inter({
@@ -92,6 +94,9 @@ export default function RootLayout({
           <NoticeBanner />
           <main className="flex-grow">{children}</main>
           <Footer />
+          <Suspense fallback={null}>
+            <AnalyticsTracker />
+          </Suspense>
         </AuthProvider>
       </body>
     </html>
