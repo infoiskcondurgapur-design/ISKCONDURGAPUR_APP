@@ -1,13 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FaCalendarAlt, FaMapMarkerAlt, FaClock, FaChevronLeft, FaChevronRight, FaFilter } from 'react-icons/fa';
+import { FaCalendarAlt, FaMapMarkerAlt, FaClock, FaChevronLeft, FaChevronRight, FaFilter, FaSpinner } from 'react-icons/fa';
+import { getEvents, ApiEvent } from '@/lib/api';
 
 interface Event {
-  id: number;
+  id: string;
   title: string;
   date: string;
   time: string;
@@ -17,56 +18,43 @@ interface Event {
   category: string;
 }
 
+const toLocalDate = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
 export default function CalendarPage() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [direction, setDirection] = useState(0);
+  const [events, setEvents] = useState<Event[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Sample events data
-  const events: Event[] = [
-    {
-      id: 1,
-      title: "Janmashtami Celebration",
-      date: "2025-08-18",
-      time: "6:00 PM - 12:00 AM",
-      location: "ISKCON Temple Main Hall",
-      description: "Join us for the celebration of Lord Krishna's appearance day with kirtan, abhishek, and feast.",
-      image: "/images/events/janmashtami-celebration.jpg",
-      category: "Festival"
-    },
-    {
-      id: 2,
-      title: "Sunday Feast Program",
-      date: "2025-06-15",
-      time: "5:00 PM - 8:00 PM",
-      location: "ISKCON Temple",
-      description: "Weekly Sunday program featuring kirtan, lecture, and prasadam feast.",
-      image: "/images/iskcon-logo.png",
-      category: "Regular"
-    },
-    {
-      id: 3,
-      title: "Ratha Yatra Festival",
-      date: "2025-07-01",
-      time: "10:00 AM - 6:00 PM",
-      location: "City Center Park",
-      description: "Annual Chariot Festival featuring a procession, cultural performances, and free vegetarian feast.",
-      image: "/images/events/ratha-yatra-festival.jpg",
-      category: "Festival"
-    },
-    {
-      id: 4,
-      title: "Gaura Purnima Festival",
-      date: "2025-03-14",
-      time: "5:00 PM - 9:00 PM",
-      location: "ISKCON Temple",
-      description: "Celebrating the appearance day of Lord Chaitanya Mahaprabhu.",
-      image: "/images/events/gaura-purnima-festival.jpg",
-      category: "Festival"
-    }
-  ];
+  useEffect(() => {
+    const load = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const res = await getEvents({ per_page: '100' });
+        setEvents((res.data as ApiEvent[]).map(e => ({
+          id: e._id,
+          title: e.title,
+          date: toLocalDate(new Date(e.date)),
+          time: e.time || '',
+          location: e.location || 'ISKCON Durgapur',
+          description: e.description || '',
+          image: e.image || '/images/iskcon-logo.png',
+          category: e.category || 'Special Event'
+        })));
+      } catch (err) {
+        console.error('Error loading calendar events:', err);
+        setError(err instanceof Error ? err.message : 'Failed to load events');
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, []);
 
-  const categories = ['All', 'Festival', 'Regular', 'Workshop', 'Class'];
+  const categories = ['All', ...Array.from(new Set(events.map(e => e.category).filter(Boolean)))];
 
   const months = [
     "January", "February", "March", "April", "May", "June",
@@ -168,7 +156,23 @@ export default function CalendarPage() {
       {/* Calendar Section */}
       <section className="py-16">
         <div className="container mx-auto px-4">
-          {/* Category Filter with staggered animation */}
+
+          {loading && (
+            <div className="flex items-center justify-center py-24">
+              <FaSpinner className="animate-spin text-iskcon-orange text-4xl" />
+              <span className="ml-4 text-gray-500 text-lg">Loading events from database…</span>
+            </div>
+          )}
+
+          {!loading && error && (
+            <div className="max-w-lg mx-auto text-center py-16">
+              <p className="text-red-500 font-semibold mb-2">{error}</p>
+              <button onClick={() => window.location.reload()} className="bg-iskcon-orange text-white px-6 py-2 rounded-lg">Retry</button>
+            </div>
+          )}
+
+          {!loading && !error && (
+          <div>
           <motion.div 
             className="mb-8 flex flex-wrap items-center justify-center gap-3"
             initial="hidden"
@@ -394,6 +398,8 @@ export default function CalendarPage() {
               </motion.div>
             ))}
           </motion.div>
+          </div>
+          )}
         </div>
       </section>
     </main>

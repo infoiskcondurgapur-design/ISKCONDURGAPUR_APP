@@ -1,70 +1,39 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
 import {
-    FaCalendarAlt, FaClock, FaUsers, FaStar, FaSearch,
+    FaCalendarAlt, FaClock, FaUsers, FaStar, FaSearch, FaSpinner,
     FaGraduationCap, FaArrowRight, FaCheckCircle, FaChevronDown,
     FaChevronUp, FaFilter, FaQuoteLeft, FaPlay
 } from 'react-icons/fa';
+import { getCourses, ApiCourse } from '@/lib/api';
+
+interface Course {
+    id: string; title: string; tagline: string; description: string; image: string;
+    bannerColor: string; duration: string; startDate: string; endDate?: string;
+    instructor: string; level: string; category: string; rating: number;
+    enrolledCount: number; completedCount: number; certificate: boolean;
+    price: number | string; language: string;
+    highlights: string[]; testimonials: { name: string; text: string; rating: number }[];
+    nextBatch?: string;
+}
+
+const BANNER = ['from-green-500 to-emerald-500','from-blue-600 to-cyan-500','from-amber-600 to-yellow-500','from-purple-600 to-indigo-500'];
+
+const mapCourse = (c: ApiCourse, i: number): Course => ({
+    id: c._id, title: c.title, tagline: c.tagline||'', description: c.description||'', image: c.image||'/images/iskcon-logo.png',
+    bannerColor: c.banner_color||BANNER[i%BANNER.length], duration: c.duration||'', startDate: c.start_date||'', endDate: c.end_date,
+    instructor: c.instructor||'Temple Team', level: c.level||'Beginner', category: c.category||'General',
+    rating: c.rating||4.5, enrolledCount: c.enrolled_count||0, completedCount: c.enrolled_count||0,
+    certificate: !!c.certificate, price: c.price??'Free', language: c.language||'',
+    highlights: [], testimonials: [],
+});
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
-const completedCourses = [
-    {
-        id: 'vedic-cooking',
-        title: 'Vedic Cooking & Prasadam Preparation',
-        tagline: 'Cook with devotion, offer with love',
-        description: 'A 6-week hands-on course in traditional Vaishnava cooking, from daily sabzi and dal to festival sweets and a full Chappan Bhog offering.',
-        image: '/images/courses/vedic-cooking.jpg',
-        bannerColor: 'from-green-500 to-emerald-500',
-        duration: '6 weeks',
-        startDate: '2025-10-05',
-        endDate: '2025-11-09',
-        instructor: 'HG Lakshmi Devi Dasi',
-        level: 'Beginner' as const,
-        category: 'Lifestyle',
-        rating: 4.9,
-        enrolledCount: 750,
-        completedCount: 712,
-        certificate: true,
-        price: 1499,
-        language: 'Bengali / English',
-        highlights: ['712 graduates', '20+ recipes taught', 'Prasadam philosophy'],
-        testimonials: [
-            { name: 'Priya Sharma', text: 'This course transformed the way I cook. Every meal is now an offering!', rating: 5 },
-            { name: 'Ananda Das', text: 'HG Lakshmi Devi Dasi teaches with so much love. Highly recommended!', rating: 5 },
-        ],
-        nextBatch: '2026-06-01',
-    },
-    {
-        id: 'sanskrit-basics',
-        title: 'Mridanga & Kartal Course',
-        tagline: 'Master the divine rhythms of kirtan',
-        description: 'A 10-week intensive on mridanga and kartal techniques for Vaishnava kirtan — from basic strokes to leading temple programmes.',
-        image: '/images/courses/sanskrit.jpg',
-        bannerColor: 'from-blue-600 to-cyan-500',
-        duration: '10 weeks',
-        startDate: '2025-09-01',
-        endDate: '2025-11-10',
-        instructor: 'HG Dr. Nityananda Das',
-        level: 'Beginner' as const,
-        category: 'Music',
-        rating: 4.6,
-        enrolledCount: 420,
-        completedCount: 395,
-        certificate: true,
-        price: 1999,
-        language: 'Bengali',
-        highlights: ['395 graduates', '5 kirtan rhythms covered', 'Live performance assessment'],
-        testimonials: [
-            { name: 'Gopal Chatterjee', text: 'I went from zero musical knowledge to leading kirtans at our temple!', rating: 5 },
-            { name: 'Radha Dasi', text: 'Patient teaching and excellent course material.', rating: 4 },
-        ],
-        nextBatch: '2026-04-15',
-    },
-];
+const FALLBACK_COURSES: Course[] = [];
 
 const levelColor: Record<string, string> = {
     Beginner: 'bg-green-100 text-green-800',
@@ -73,11 +42,28 @@ const levelColor: Record<string, string> = {
 };
 
 export default function CompletedCoursesPage() {
+    const [completedCourses, setCompletedCourses] = useState<Course[]>(FALLBACK_COURSES);
+    const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('');
     const [selectedLevel, setSelectedLevel] = useState('');
     const [showFilters, setShowFilters] = useState(false);
     const [expandedTestimonials, setExpandedTestimonials] = useState<string[]>([]);
+
+    useEffect(() => {
+        const load = async () => {
+            try {
+                const res = await getCourses();
+                const raw: ApiCourse[] = Array.isArray(res.data) ? res.data : [];
+                setCompletedCourses(raw.filter(c => c.status === 'Completed').map(mapCourse));
+            } catch (err) {
+                console.error('Failed to load completed courses:', err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        load();
+    }, []);
 
     const toggleTestimonials = (id: string) => {
         setExpandedTestimonials(prev =>
@@ -125,7 +111,7 @@ export default function CompletedCoursesPage() {
                             {[
                                 { label: 'Courses Completed', value: completedCourses.length },
                                 { label: 'Graduates', value: completedCourses.reduce((s, c) => s + c.completedCount, 0).toLocaleString() },
-                                { label: 'Avg. Rating', value: (completedCourses.reduce((s, c) => s + c.rating, 0) / completedCourses.length).toFixed(1) + ' ★' },
+                                { label: 'Avg. Rating', value: completedCourses.length ? (completedCourses.reduce((s, c) => s + c.rating, 0) / completedCourses.length).toFixed(1) + ' ★' : '—' },
                                 { label: 'Next Batches', value: completedCourses.length },
                             ].map((stat, i) => (
                                 <div key={i} className="text-center">
@@ -138,7 +124,14 @@ export default function CompletedCoursesPage() {
                 </div>
             </section>
 
-            {/* ── Breadcrumb ── */}
+            {loading && (
+                <div className="flex items-center justify-center py-24 bg-gray-50">
+                    <FaSpinner className="animate-spin text-gray-500 text-4xl" />
+                    <span className="ml-4 text-gray-500 text-lg">Loading completed courses…</span>
+                </div>
+            )}
+
+            {!loading && (<>
             <div className="bg-white border-b border-gray-100 py-3">
                 <div className="container mx-auto px-4 flex items-center gap-2 text-sm text-gray-500">
                     <Link href="/courses" className="hover:text-orange-600">All Courses</Link>
@@ -260,8 +253,8 @@ export default function CompletedCoursesPage() {
                                         {/* Meta */}
                                         <div className="flex flex-wrap gap-4 text-xs text-gray-500 mb-4">
                                             <span className="flex items-center gap-1"><FaCalendarAlt />
-                                                {new Date(course.startDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })} –
-                                                {new Date(course.endDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                                {new Date(course.startDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                                {course.endDate && <> – {new Date(course.endDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</>}
                                             </span>
                                             <span className="flex items-center gap-1"><FaClock /> {course.duration}</span>
                                             <span className="flex items-center gap-1"><FaUsers /> {course.completedCount.toLocaleString()} graduates</span>
@@ -361,6 +354,8 @@ export default function CompletedCoursesPage() {
                     </Link>
                 </div>
             </div>
+            </>
+            )}
         </main>
     );
 }

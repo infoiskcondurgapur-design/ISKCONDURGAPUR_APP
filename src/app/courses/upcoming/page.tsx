@@ -1,115 +1,45 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
 import {
-    FaCalendarAlt, FaClock, FaUsers, FaStar, FaSearch,
+    FaCalendarAlt, FaClock, FaUsers, FaStar, FaSearch, FaSpinner,
     FaFilter, FaMapMarkerAlt, FaGraduationCap, FaArrowRight,
     FaTag, FaChevronDown, FaChevronUp
 } from 'react-icons/fa';
+import { getCourses, ApiCourse } from '@/lib/api';
+
+interface Course {
+    id: string; title: string; tagline: string; description: string; image: string;
+    bannerColor: string; duration: string; schedule: string; startDate: string;
+    enrolledCount: number; maxSeats: number; instructor: string; level: string;
+    category: string; rating: number; featured: boolean; price: number | string;
+    originalPrice?: number; language: string; location: string; mode: string;
+    certificate: boolean; daysLeft: number;
+}
+
+const BANNER = ['from-teal-500 to-cyan-500','from-orange-500 to-amber-500','from-purple-600 to-indigo-600','from-rose-600 to-pink-500','from-amber-600 to-yellow-500'];
+
+const mapCourse = (c: ApiCourse, i: number): Course => {
+    const daysLeft = c.start_date ? Math.max(0, Math.ceil((new Date(c.start_date).getTime() - Date.now()) / 86400000)) : 0;
+    return { id: c._id, title: c.title, tagline: c.tagline||'', description: c.description||'', image: c.image||'/images/iskcon-logo.png', bannerColor: c.banner_color||BANNER[i%BANNER.length], duration: c.duration||'', schedule: c.schedule||'', startDate: c.start_date||'', enrolledCount: c.enrolled_count||0, maxSeats: c.max_seats||60, instructor: c.instructor||'Temple Team', level: c.level||'Beginner', category: c.category||'General', rating: c.rating||4.5, featured: !!c.featured, price: c.price??'Free', language: c.language||'', location: c.location||'', mode: c.mode||'', certificate: !!c.certificate, daysLeft };
+};
 
 // ─── Reusing shared course data ───────────────────────────────────────────────
-const upcomingCourses = [
-    {
-        id: 'bhagavad-gita-essentials',
-        title: 'Bhagavad Gita Essentials',
-        tagline: 'Unlock the timeless wisdom of the Song of God',
-        description: 'A comprehensive foundational study of all 18 chapters of the Bhagavad Gita with practical application for modern life.',
-        image: '/images/courses/bhagavad-gita.jpg',
-        bannerColor: 'from-orange-500 to-amber-500',
-        duration: '8 weeks',
-        schedule: 'Saturdays, 10:00 AM – 12:00 PM',
-        startDate: '2026-03-08',
-        enrolledCount: 1245,
-        maxSeats: 60,
-        instructor: 'HH Radha Krishna Das',
-        level: 'Beginner' as const,
-        category: 'Scripture Study',
-        rating: 4.9,
-        featured: true,
-        price: 'Free' as const,
-        language: 'English / Bengali',
-        location: 'ISKCON Durgapur + Online',
-        mode: 'Hybrid',
-        certificate: true,
-        daysLeft: 13,
-    },
-    {
-        id: 'mantra-meditation',
-        title: 'ISKCON Disciple Course',
-        tagline: 'Prepare for initiation with depth and clarity',
-        description: 'Official ISKCON preparation course covering the guru-disciple relationship, Vaishnava etiquette, and sadhana standards.',
-        image: '/images/courses/meditation.jpg',
-        bannerColor: 'from-purple-600 to-indigo-600',
-        duration: '4 weeks',
-        schedule: 'Wednesdays, 6:30 PM – 8:00 PM',
-        startDate: '2026-03-18',
-        enrolledCount: 890,
-        maxSeats: 40,
-        instructor: 'HG Yamuna Devi Dasi',
-        level: 'Beginner' as const,
-        category: 'Devotee Training',
-        rating: 4.8,
-        featured: true,
-        price: 400,
-        originalPrice: 600,
-        language: 'English / Hindi',
-        location: 'ISKCON Durgapur',
-        mode: 'Offline',
-        certificate: true,
-        daysLeft: 23,
-    },
-    {
-        id: 'bhakti-yoga-philosophy',
-        title: 'Pujari Course',
-        tagline: 'Learn the sacred art of Deity worship',
-        description: 'Intensive 12-week hands-on training in all aspects of Deity seva — from arati procedures to dressing and offering bhoga.',
-        image: '/images/courses/bhakti-yoga.jpg',
-        bannerColor: 'from-rose-600 to-pink-500',
-        duration: '12 weeks',
-        schedule: 'Tuesdays & Thursdays, 7:00 PM – 8:30 PM',
-        startDate: '2026-04-01',
-        enrolledCount: 675,
-        maxSeats: 25,
-        instructor: 'HG Govinda Das',
-        level: 'Intermediate' as const,
-        category: 'Temple Service',
-        rating: 4.7,
-        featured: false,
-        price: 1200,
-        language: 'Bengali / Hindi',
-        location: 'ISKCON Durgapur Temple',
-        mode: 'Offline',
-        certificate: true,
-        daysLeft: 37,
-    },
-    {
-        id: 'srimad-bhagavatam',
-        title: 'Srimad Bhagavatam: First Canto',
-        tagline: 'The ripened fruit of the tree of Vedic knowledge',
-        description: 'A 16-week deep study of the First Canto with recorded lectures by HH Bhakti Charu Swami, supplemented by live discussions.',
-        image: '/images/courses/bhagavatam.jpg',
-        bannerColor: 'from-amber-600 to-yellow-500',
-        duration: '16 weeks',
-        schedule: 'Fridays, 5:30 PM – 7:30 PM',
-        startDate: '2026-05-01',
-        enrolledCount: 560,
-        maxSeats: 35,
-        instructor: 'HG Madhava Das',
-        level: 'Advanced' as const,
-        category: 'Scripture Study',
-        rating: 4.9,
-        featured: false,
-        price: 2499,
-        language: 'English',
-        location: 'ISKCON Durgapur + Online',
-        mode: 'Hybrid',
-        certificate: true,
-        daysLeft: 67,
-    },
-];
+const FALLBACK_COURSES: Course[] = [];
+
+const getUpcomingCourses = async (): Promise<Course[]> => {
+    const res = await getCourses();
+    const raw: ApiCourse[] = Array.isArray(res.data) ? res.data : [];
+    const upcoming = raw
+        .filter(c => c.status !== 'Completed')
+        .sort((a, b) => (a.start_date || '').localeCompare(b.start_date || ''));
+    return upcoming.map(mapCourse);
+};
+
+// categories derived dynamically from loaded courses
 
 const levelColor: Record<string, string> = {
     Beginner: 'bg-green-100 text-green-800',
@@ -117,14 +47,29 @@ const levelColor: Record<string, string> = {
     Advanced: 'bg-purple-100 text-purple-800',
 };
 
-const categories = Array.from(new Set(upcomingCourses.map(c => c.category)));
-
 export default function UpcomingCoursesPage() {
+    const [upcomingCourses, setUpcomingCourses] = useState<Course[]>(FALLBACK_COURSES);
+    const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('');
     const [selectedLevel, setSelectedLevel] = useState('');
     const [showFilters, setShowFilters] = useState(false);
     const [sortBy, setSortBy] = useState<'date' | 'rating' | 'price'>('date');
+    const categories = Array.from(new Set(upcomingCourses.map(c => c.category)));
+
+    useEffect(() => {
+        const load = async () => {
+            try {
+                const res = await getUpcomingCourses();
+                setUpcomingCourses(res);
+            } catch (err) {
+                console.error('Failed to load courses:', err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        load();
+    }, []);
 
     const filtered = upcomingCourses
         .filter(c => {
@@ -194,7 +139,14 @@ export default function UpcomingCoursesPage() {
                 </div>
             </section>
 
-            {/* ── Countdown Banner ── */}
+            {loading && (
+                <div className="flex items-center justify-center py-24 bg-gray-50">
+                    <FaSpinner className="animate-spin text-teal-500 text-4xl" />
+                    <span className="ml-4 text-gray-500 text-lg">Loading courses from database…</span>
+                </div>
+            )}
+
+            {!loading && (<>
             <div className="bg-amber-50 border-b border-amber-200 py-3">
                 <div className="container mx-auto px-4">
                     <div className="flex flex-wrap gap-4 items-center justify-center md:justify-start text-sm text-amber-800">
@@ -410,6 +362,8 @@ export default function UpcomingCoursesPage() {
                     </div>
                 </div>
             </div>
+            </>
+            )}
         </main>
     );
 }

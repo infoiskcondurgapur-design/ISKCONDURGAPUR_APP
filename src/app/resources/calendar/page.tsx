@@ -14,36 +14,33 @@ interface Task {
   color: string;
 }
 
+const STORAGE_KEY = 'iskcon_sadhana_tasks';
+
 export default function ModernCalendarPage() {
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [tasks, setTasks] = useState<Task[]>([
-    {
-      id: 1,
-      title: "Morning Mangala Arati",
-      date: "2025-06-13",
-      completed: true,
-      color: "bg-pink-400"
-    },
-    {
-      id: 2,
-      title: "Bhagavad Gita Class",
-      date: "2025-06-13",
-      completed: false,
-      color: "bg-blue-400"
-    },
-    {
-      id: 3,
-      title: "Evening Gaura Arati",
-      date: "2025-06-13",
-      completed: false,
-      color: "bg-yellow-400"
+  // Tasks persist in the browser (localStorage) so they survive refreshes
+  const [tasks, setTasks] = useState<Task[]>(() => {
+    if (typeof window === 'undefined') return [];
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      return saved ? JSON.parse(saved) as Task[] : [];
+    } catch {
+      return [];
     }
-  ]);
+  });
   const [showModal, setShowModal] = useState(false);
   const [newTaskDate, setNewTaskDate] = useState<string>('');
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskColor, setNewTaskColor] = useState('bg-blue-400');
   const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+    } catch (err) {
+      console.error('Error saving tasks:', err);
+    }
+  }, [tasks]);
 
   const months = [
     "January", "February", "March", "April", "May", "June",

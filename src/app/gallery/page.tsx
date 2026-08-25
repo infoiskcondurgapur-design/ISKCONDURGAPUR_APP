@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import 'photoswipe/dist/photoswipe.css';
 
 interface GalleryImage {
-  id: number;
+  id: number | string;
   src: string;
   thumbnail: string;
   title: string;
@@ -16,6 +16,14 @@ interface GalleryImage {
   width: number;
   height: number;
   description?: string;
+  date?: string;
+}
+
+interface ApiImage {
+  _id?: string;
+  url?: string;
+  title?: string;
+  category?: string;
   date?: string;
 }
 
@@ -29,9 +37,10 @@ const categories = [
   'Books',
 ];
 
-const images: GalleryImage[] = [
+// Curated starter images shown alongside (or until) database images load
+const STATIC_IMAGES: GalleryImage[] = [
   {
-    id: 1,
+    id: 'static-1',
     src: '/images/krishna-temple.jpg',
     thumbnail: '/images/krishna-temple.jpg',
     title: 'ISKCON Temple',
@@ -41,7 +50,7 @@ const images: GalleryImage[] = [
     description: 'Beautiful ISKCON temple architecture showcasing Vedic design',
   },
   {
-    id: 2,
+    id: 'static-2',
     src: '/images/events/janmashtami-celebration.jpg',
     thumbnail: '/images/events/janmashtami-celebration.jpg',
     title: 'Janmashtami Celebration',
@@ -51,7 +60,7 @@ const images: GalleryImage[] = [
     description: 'Devotees celebrating the divine appearance of Lord Krishna',
   },
   {
-    id: 3,
+    id: 'static-3',
     src: '/images/events/ratha-yatra-festival.jpg',
     thumbnail: '/images/events/ratha-yatra-festival.jpg',
     title: 'Ratha Yatra Festival',
@@ -61,7 +70,7 @@ const images: GalleryImage[] = [
     description: 'The grand chariot festival celebrating Lord Jagannath',
   },
   {
-    id: 4,
+    id: 'static-4',
     src: '/images/srila-prabhupada.jpg',
     thumbnail: '/images/srila-prabhupada.jpg',
     title: 'Srila Prabhupada - Founder Acharya',
@@ -71,7 +80,7 @@ const images: GalleryImage[] = [
     description: 'His Divine Grace A.C. Bhaktivedanta Swami Prabhupada',
   },
   {
-    id: 5,
+    id: 'static-5',
     src: '/images/history-of-iskcon.jpg',
     thumbnail: '/images/history-of-iskcon.jpg',
     title: 'ISKCON History',
@@ -81,7 +90,7 @@ const images: GalleryImage[] = [
     description: 'Historical moments in the development of ISKCON',
   },
   {
-    id: 6,
+    id: 'static-6',
     src: '/images/iskcon-temple-dome.jpg',
     thumbnail: '/images/iskcon-temple-dome.jpg',
     title: 'Temple Dome',
@@ -91,7 +100,7 @@ const images: GalleryImage[] = [
     description: 'Majestic dome of an ISKCON temple',
   },
   {
-    id: 7,
+    id: 'static-7',
     src: '/images/events/gaura-purnima-festival.jpg',
     thumbnail: '/images/events/gaura-purnima-festival.jpg',
     title: 'Gaura Purnima Festival',
@@ -112,29 +121,60 @@ const breakpointColumns = {
 // Loading skeleton component
 const ImageSkeleton = () => (
   <div className="relative w-full h-64 mb-4 bg-gray-200 rounded-xl overflow-hidden">
-    <div className="absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 animate-shimmer" 
+    <div className="absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 animate-shimmer"
          style={{ backgroundSize: '400% 100%' }}></div>
   </div>
 );
 
 export default function PhotoGallery() {
   const [selectedCategory, setSelectedCategory] = useState('All');
-  const [filteredImages, setFilteredImages] = useState(images);
+  const [allImages, setAllImages] = useState<GalleryImage[]>([]);
+  const [filteredImages, setFilteredImages] = useState<GalleryImage[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Load images managed via the admin panel, merged with curated starters
+  useEffect(() => {
+    const load = async () => {
+      let dbImages: GalleryImage[] = [];
+      try {
+        const res = await fetch('/api/gallery', { cache: 'no-store' });
+        const result = await res.json();
+        if (res.ok && Array.isArray(result.data)) {
+          dbImages = (result.data as ApiImage[])
+            .filter(img => img.url)
+            .map((img, i) => ({
+              id: img._id || `db-${i}`,
+              src: img.url as string,
+              thumbnail: img.url as string,
+              title: img.title || 'Temple Moment',
+              category: img.category || 'Events',
+              width: 1920,
+              height: 1080,
+              description: img.title || undefined,
+              date: img.date
+            }));
+        }
+      } catch (err) {
+        console.error('Error loading gallery:', err);
+      }
+      setAllImages([...dbImages, ...STATIC_IMAGES]);
+    };
+    load();
+  }, []);
 
   useEffect(() => {
     // Filter images based on selected category
     const filtered = selectedCategory === 'All'
-      ? images
-      : images.filter(img => img.category === selectedCategory);
-    
+      ? allImages
+      : allImages.filter(img => img.category === selectedCategory);
+
     setLoading(true);
-    // Simulate loading for smoother transitions
+    // Brief transition for smoother filtering
     setTimeout(() => {
       setFilteredImages(filtered);
       setLoading(false);
-    }, 300);
-  }, [selectedCategory]);
+    }, 200);
+  }, [selectedCategory, allImages]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-100 via-pink-100 to-rose-100 pt-20">
@@ -216,16 +256,24 @@ export default function PhotoGallery() {
                             whileHover={{ scale: 1.02 }}
                             whileTap={{ scale: 0.98 }}
                           >
-                            <Image
-                              src={image.thumbnail}
-                              alt={image.title}
-                              width={image.width}
-                              height={image.height}
-                              className="w-full h-auto"
-                              loading="lazy"
-                              placeholder="blur"
-                              blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAAQEAAAHIAAAAAAQwAABtbnRyUkdCIFhZWiAH4AABAAEAAAAAAABhY3NwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAA9tYAAQAAAADTLQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAlkZXNjAAAA8AAAACRyWFlaAAABFAAAABRnWFlaAAABKAAAABRiWFlaAAABPAAAABR3dHB0AAABUAAAABRyVFJDAAABZAAAAChnVFJDAAABZAAAAChiVFJDAAABZAAAAChjcHJ0AAABjAAAADxtbHVjAAAAAAAAAAEAAAAMZW5VUwAAAAgAAAAcAHMAUgBHAEJYWVogAAAAAAAAb6IAADj1AAADkFhZWiAAAAAAAABimQAAt4UAABjaWFlaIAAAAAAAACSgAAAPhAAAts9YWVogAAAAAAAA9tYAAQAAAADTLXBhcmEAAAAAAAQAAAACZmYAAPKnAAANWQAAE9AAAApbAAAAAAAAAABtbHVjAAAAAAAAAAEAAAAMZW5VUwAAACAAAAAcAEcAbwBvAGcAbABlACAASQBuAGMALgAgADIAMAAxADb/2wBDABQODxIPDRQSEBIXFRQdHx4eHRoaHSQtJyEkLzYxMC8wLjIyPVBCPjpBMjIxQ0ZHSkdERVhNWF1bZUJHZmlecW3/2wBDARUXFx4aHR4eHW1tLicnLm1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW3/wAARCAAIAAoDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAb/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdABmX/9k="
-                            />
+                            {image.src.startsWith('/') ? (
+                              <Image
+                                src={image.thumbnail}
+                                alt={image.title}
+                                width={image.width}
+                                height={image.height}
+                                className="w-full h-auto"
+                                loading="lazy"
+                              />
+                            ) : (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img
+                                src={image.thumbnail}
+                                alt={image.title}
+                                className="w-full h-auto"
+                                loading="lazy"
+                              />
+                            )}
                             <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
                               <div className="text-white text-center px-4">
                                 <h3 className="font-medium text-lg mb-2">{image.title}</h3>
