@@ -159,25 +159,6 @@ export default function HeroContent() {
                     sizes="(max-width: 1024px) 100vw, 50vw"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-
-                  {/* Floating Info Card */}
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 1.2 }}
-                    className="absolute bottom-6 left-6 right-6 bg-white/95 backdrop-blur-sm rounded-2xl p-4 shadow-xl"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="font-bold text-gray-800 text-lg">Sri Sri Radha Madanmohan Temple</h3>
-                        <p className="text-gray-500 text-sm">Durgapur, West Bengal</p>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-2xl font-bold text-orange-500">🙏</div>
-                        <p className="text-xs text-gray-500">Jai Sri Krishna</p>
-                      </div>
-                    </div>
-                  </motion.div>
                 </div>
               </motion.div>
 
